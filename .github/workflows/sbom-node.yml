@@ -1,0 +1,40 @@
+name: Generate SBOM for Node.js
+
+on:
+  workflow_call:
+  
+jobs:
+  generate-sbom:
+    name: Node.js SBOM Generation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20' # oder deine gewünschte Version
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install cyclonedx-npm
+        run: npm install -g @cyclonedx/cyclonedx-npm
+
+      - name: Generate SBOM
+        run: cyclonedx-npm --output-file sbom.json --output-format json
+
+      - name: Upload SBOM to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: sbom.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload SBOM as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: sbom.json
