@@ -1,0 +1,96 @@
+name: Maven Deploy
+
+on:
+  workflow_call:
+    inputs:
+      repo_name: 
+         description: "Final Repo name"
+         type: string
+         default: ''
+         required: false
+      java_version:
+        description: 'Java version to use'
+        required: false
+        default: '21'
+        type: string
+
+      deploy_mode:
+        description: 'Deployment mode: jib or jar'
+        required: false
+        default: 'jib'
+        type: string
+
+      folder:
+        description: 'Path to folder containing pom.xml'
+        required: false
+        default: '.'
+        type: string
+
+      harbor_config:
+        description: 'path to harbor config'
+        type: string
+        default: "harbor.config"
+        required: false
+
+jobs:
+  setup:
+    uses: eclipse-xfsc/dev-ops/.github/workflows/build-context.yml@main
+    secrets: inherit
+    with:
+      repo_name: ${{ inputs.repo_name}}
+  maven-deploy:
+    needs: setup
+    runs-on: ubuntu-latest
+    name: Deploy ${{ inputs.folder }}
+    defaults:
+      run:
+        working-directory: ${{ inputs.folder }}
+    env:
+      MAVEN_OPTS: >-
+        -Dhttps.protocols=TLSv1.2
+        -Dmaven.repo.local=.m2/repository
+        -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN
+        -Dorg.slf4j.simpleLogger.showDateTime=true
+        -Djava.awt.headless=true
+      MAVEN_CLI_OPTS: >-
+        --batch-mode --errors --fail-at-end --show-version
+        -DinstallAtEnd=true -DdeployAtEnd=true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ inputs.java_version }}
+
+      - uses: actions/cache@v3
+        with:
+          path: .m2/repository
+          key: ${{ runner.os }}-m2-${{ inputs.folder }}
+          restore-keys: ${{ runner.os }}-m2-
+
+      - name: Build with Jib (Docker Image)
+        if: ${{ inputs.deploy_mode == 'jib' }}
+        env:
+          HARBOR_HOST: ${{ secrets.HARBOR_HOST }}
+          HARBOR_CREDENTIALS: ${{ secrets.HARBOR_CREDENTIALS }}
+          IMAGE_TAG: ${{ needs.setup.outputs.image_tag }}
+          REPO_NAME: ${{ needs.setup.outputs.repo_name }}
+        run: |  
+          git clone https://github.com/eclipse-xfsc/dev-ops.git devops
+          chmod +x ./devops/scripts/harborconfig.sh
+          . ./devops/scripts/harborconfig.sh ${{ inputs.harbor_config}}
+          mvn $MAVEN_CLI_OPTS package jib:build -am
+
+      - name: Build JAR
+        if: ${{ inputs.deploy_mode == 'jar' }}
+        run: mvn $MAVEN_CLI_OPTS package -DskipTests
+
+      - name: Upload JAR Artifact
+        if: ${{ inputs.deploy_mode == 'jar' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: jar-${{ inputs.folder }}
+          path: target/*.jar

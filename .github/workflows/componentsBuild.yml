@@ -1,0 +1,56 @@
+name: Build Components
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  detect-folders:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix-folders: ${{ steps.detect.outputs.matrix-folders }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: detect
+        run: |
+          echo "🔍 Suche Komponenten..."
+          git fetch --prune --unshallow || true
+
+          # Wenn Release, dann baue ALLE Komponenten
+          if [ "${{ github.event_name }}" == "release" ]; then
+            echo "📦 Release Event erkannt - Baue ALLE Komponenten!"
+            FOLDERS=$(find components -mindepth 1 -maxdepth 1 -type d | xargs -n 1 basename | jq -R -s -c 'split("\n")[:-1]')
+          else
+            echo "🛠 Workflow Dispatch erkannt - Baue ALLE Komponenten!" 
+            FOLDERS=$(find components -mindepth 1 -maxdepth 1 -type d | xargs -n 1 basename | jq -R -s -c 'split("\n")[:-1]')
+          fi
+
+          echo "📂 Gefundene Ordner: $FOLDERS"
+          echo "matrix-folders=$FOLDERS" >> $GITHUB_OUTPUT
+
+
+  docker-build:
+    needs: detect-folders
+    if: needs.detect-folders.outputs.matrix-folders != '[]'  # Nur wenn etwas geändertes da ist
+    strategy:
+      matrix:
+        folder: ${{ fromJson(needs.detect-folders.outputs.matrix-folders) }}
+    name: Build Docker Image for ${{ matrix.folder }}
+    uses: ./.github/workflows/dockerbuild.yml
+    with:
+      dockerfile: components/${{ matrix.folder }}/deployment/docker/Dockerfile
+      buildContext: components/${{ matrix.folder }}
+      service: ${{ matrix.folder }}
+
+  helm-build:
+    needs: detect-folders
+    if: needs.detect-folders.outputs.matrix-folders != '[]'  # Nur wenn etwas geändertes da ist
+    strategy:
+      matrix:
+        folder: ${{ fromJson(needs.detect-folders.outputs.matrix-folders) }}
+    name: Build Helm Chart for ${{ matrix.folder }}
+    uses: ./.github/workflows/helm.yml
+    with:
+      buildContext: components/${{ matrix.folder }}/deployment/helm

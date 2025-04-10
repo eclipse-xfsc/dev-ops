@@ -1,0 +1,63 @@
+name: Deploy Helm Chart (Org Workflow)
+
+on:
+  workflow_call:
+    inputs: 
+       buildContext:
+        description: 'path for build'
+        type: string
+        default: "helm"
+        required: false
+       harbor_config:
+        description: 'path to harbor config'
+        type: string
+        default: "harbor.config"
+        required: false
+jobs:
+  setup:
+    uses: eclipse-xfsc/dev-ops/.github/workflows/build-context.yml@main
+    secrets: inherit
+  helm-push:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use IMAGE_TAG
+        run: | 
+          echo "The image tag is: ${{ needs.setup.outputs.image_tag }}"
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.13.0
+
+      - name: Find and Push Helm Charts
+        env: 
+          HARBOR_HOST: ${{ secrets.HARBOR_HOST }}
+          HARBOR_CREDENTIALS: ${{ secrets.HARBOR_CREDENTIALS }}
+        run: |
+          git clone https://github.com/eclipse-xfsc/dev-ops.git devops
+          chmod +x ./devops/scripts/harborconfig.sh
+          . ./devops/scripts/harborconfig.sh ${{ inputs.harbor_config}}
+          
+          helm registry login "$HARBOR_HOST" \
+            --username "$HARBOR_USERNAME" \
+            --password "$HARBOR_PASSWORD"
+  
+          CHART_DIR="${{ inputs.buildContext}}"
+          cd "$CHART_DIR"
+          echo "Build Dependencies"
+          IMAGE_TAG="${{ needs.setup.outputs.image_tag }}"
+          sed -i.bak -E "s/^(version: .+)-tag$/\1-${IMAGE_TAG}/" Chart.yaml
+          # Helm Dependency Build
+          helm dependency build
+          echo "Build Chart"
+          # Helm Package
+          helm package .
+
+          CHART_NAME=$(grep '^name:' Chart.yaml | awk '{print $2}')
+    
+          PACKAGE_FILE="${CHART_NAME}-*.tgz"
+          echo "Push Chart"
+          helm push $PACKAGE_FILE oci://$HARBOR_HOST/$HARBOR_PROJECT

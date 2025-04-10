@@ -1,0 +1,43 @@
+name: Eclipse Dash License Scan (Maven) with Repo Info
+
+on:
+  workflow_call:
+    inputs:
+      java_version:
+        required: false
+        type: string
+        default: '17'
+
+jobs:
+  dash-license-maven:
+    name: Scan Maven dependencies with Eclipse Dash
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java and Maven
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ inputs.java_version}}
+
+      - name: Generate Maven dependency list
+        run: |
+          mvn verify dependency:list \
+            -DskipTests=true \
+            -Dmaven.javadoc.skip=true \
+            -DappendOutput=true \
+            -DoutputFile=maven.deps
+
+      - name: Download Eclipse Dash Licenses Tool
+        run: |
+          curl -sSL -o dash-licenses.jar "https://repo.eclipse.org/service/local/artifact/maven/redirect?r=dash-licenses&g=org.eclipse.dash&a=org.eclipse.dash.licenses&v=LATEST"
+          file dash-licenses.jar
+
+      - name: Run license scan with repo metadata
+        run: |
+          java -jar dash-licenses.jar \
+            -repo "https://github.com/${{ github.repository }}" \
+            maven.deps

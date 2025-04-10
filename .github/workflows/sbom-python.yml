@@ -1,0 +1,60 @@
+name: Generate SBOM for Python
+
+on:
+  workflow_call:
+    secrets:
+      GH_TOKEN:
+        required: true
+    inputs:
+      python-version:
+        description: 'Python version to use'
+        required: false
+        default: '3.11'
+        type: string
+      requirements-file:
+        description: 'Path to requirements.txt'
+        required: false
+        default: 'requirements.txt'
+        type: string
+
+jobs:
+  generate-sbom:
+    name: Python SBOM Generation
+    runs-on: ubuntu-latest
+    env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ inputs.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python-version }}
+
+      - name: Install CycloneDX Python tool
+        run: pip install cyclonedx-bom
+
+      - name: Generate SBOM
+        run: |
+          if [ -f "${{ inputs.requirements-file }}" ]; then
+            echo "📦 Using requirements file: ${{ inputs.requirements-file }}"
+            cyclonedx-py -r -i "${{ inputs.requirements-file }}" -o sbom.json
+          elif [ -f poetry.lock ]; then
+            echo "📦 Using Poetry for dependency resolution"
+            cyclonedx-py -p poetry -o sbom.json
+          else
+            echo "❌ No requirements file or poetry.lock found. Aborting."
+            exit 1
+          fi
+
+      - name: Upload SBOM to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: sbom.json
+
+      - name: Upload SBOM as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: sbom.json

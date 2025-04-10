@@ -1,0 +1,33 @@
+name: Eclipse Dash License Scan (Go) with Repo Info
+
+on:
+   workflow_call:
+
+jobs:
+  dash-license-go:
+    name: Scan Go module licenses with Eclipse Dash
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      - name: Generate Go module list
+        run: |
+          go list -m -json all > go-modules.json
+
+      - name: Download Eclipse Dash Licenses Tool
+        run: |
+          curl -sSL -o dash-licenses.jar "https://repo.eclipse.org/service/local/artifact/maven/redirect?r=dash-licenses&g=org.eclipse.dash&a=org.eclipse.dash.licenses&v=LATEST"
+          file dash-licenses.jar
+
+      - name: Run license scan with repo metadata
+        run: |
+          java -jar dash-licenses.jar \
+            -repo "https://github.com/${{ github.repository }}" \
+            go.sum
