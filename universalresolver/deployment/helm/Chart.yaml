@@ -1,8 +1,0 @@
-apiVersion: v2
-name: universal-resolver
-description: A Helm chart for deploying a simple service
-version: 0.1.6-tag
-dependencies:
-  - name: library
-    version: 1.1.1
-    repository: oci://node-654e3bca7fbeeed18f81d7c7.ps-xaas.io/dev-ops
