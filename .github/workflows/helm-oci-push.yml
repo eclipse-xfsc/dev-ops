@@ -4,11 +4,19 @@ on:
   workflow_call:
 
 jobs:
+  setup-context:
+    uses: eclipse-xfsc/dev-ops/.github/workflows/build-context.yml@main
+    secrets: inherit
+
   helm-push:
+    needs: setup-context
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+
+      - name: Use IMAGE_TAG
+        run: | 
+          echo "The image tag is: ${{ needs.setup-context.outputs.image_tag }}"
 
       - name: Setup Image Tag
         uses: eclipse-xfsc/dev-ops/.github/workflows/build-context.yml@main
