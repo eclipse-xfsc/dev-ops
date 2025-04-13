@@ -1,0 +1,57 @@
+name: Go CI
+
+on:
+  workflow_call:
+
+jobs:
+  unit-tests:
+    name: Run Go Unit Tests
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    if: github.ref_type != 'tag'
+    container:
+      image: golang:1.21.5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run Tests with Coverage
+        run: |
+          go test ./... -gcflags="all=-N -l" -coverprofile=coverage.out
+          go tool cover -func=coverage.out
+
+  check-code:
+    name: Staticcheck Code Analysis
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    if: github.ref_type != 'tag'
+    container:
+      image: golang:1.21.5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install staticcheck
+        run: go install honnef.co/go/tools/cmd/staticcheck@latest
+
+      - name: Run staticcheck
+        run: staticcheck ./...
+
+  govulncheck:
+    name: Go Vulnerability Scan
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    if: github.ref_type != 'tag'
+    container:
+      image: golang:1.21.5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install govulncheck
+        run: |
+          go version
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+
+      - name: Run govulncheck
+        run: govulncheck ./...
