@@ -1,0 +1,95 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ .Chart.Name }}"
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: "{{ .Chart.Name }}"
+spec:
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: "{{ .Chart.Name }}"
+  template:
+    metadata:
+      labels:
+        app: "{{ .Chart.Name }}"
+    spec:
+      containers:
+        - name: uni-resolver-web
+          image: universalresolver/uni-resolver-web:latest
+          ports:
+          - name: http
+            containerPort: {{ .Values.service.port }}
+          readinessProbe:
+           httpGet:
+            path: /1.0/testIdentifiers
+            port: {{ .Values.service.port }}
+          env:
+            - name: uniresolver_web_driver_url_did_jwk
+              value: "http://universal-resolver-transmute-driver-service.{{ .Release.Namespace }}.svc.cluster.local:8080"
+            - name: uniresolver_web_driver_url_did_web
+              value: "http://universal-resolver-transmute-driver-service.{{ .Release.Namespace }}.svc.cluster.local:8080"
+            - name: uniresolver_web_driver_url_did_peer
+              value:  "http://universal-resolver-uport-driver-service.{{ .Release.Namespace }}.svc.cluster.local:8081"
+---         
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ .Chart.Name }}-transmute-driver"
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: "{{ .Chart.Name }}-transmute-driver"
+spec:
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: "{{ .Chart.Name }}-transmute-driver"
+  template:
+    metadata:
+      labels:
+        app: "{{ .Chart.Name }}-transmute-driver"
+    spec:
+      containers:
+        - name: jwk-resolver
+          image: transmute/restricted-resolver:latest
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ .Chart.Name }}-uport-driver"
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: "{{ .Chart.Name }}-uport-driver"
+spec:
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: "{{ .Chart.Name }}-uport-driver"
+  template:
+    metadata:
+      labels:
+        app: "{{ .Chart.Name }}-uport-driver"
+    spec:
+      containers:
+        - name: uport-resolver
+          image: uport/uni-resolver-driver-did-uport:4.3.0
+          readinessProbe:
+           httpGet:
+            path: /health
+            port: 8081
