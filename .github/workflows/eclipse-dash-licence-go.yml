@@ -25,7 +25,7 @@ jobs:
         run: |
           java -jar dash-licenses.jar \
             -repo "https://github.com/${{ github.repository }}" \
-            go.sum
+            go.sum > go-licenses.csv
 
       - name: Upload license report
         uses: actions/upload-artifact@v4
