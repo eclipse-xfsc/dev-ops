@@ -17,20 +17,15 @@ jobs:
         with:
           go-version: '1.21'
 
-      - name: Generate Go module list
-        run: |
-          go list -m -json all > go-modules.json
-
       - name: Download Eclipse Dash Licenses Tool
         run: |
           curl -sSL -o dash-licenses.jar "https://repo.eclipse.org/service/local/artifact/maven/redirect?r=dash-licenses&g=org.eclipse.dash&a=org.eclipse.dash.licenses&v=LATEST"
-          file dash-licenses.jar
 
       - name: Run license scan with repo metadata
         run: |
           java -jar dash-licenses.jar \
             -repo "https://github.com/${{ github.repository }}" \
-            go-modules.json
+            go.sum
 
       - name: Upload license report
         uses: actions/upload-artifact@v4
