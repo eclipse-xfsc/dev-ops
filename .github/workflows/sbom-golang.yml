@@ -2,12 +2,13 @@ name: Release SBOM with CycloneDX for Go
 
 on:
   workflow_call:
-
+     secrets:
+      GH_TOKEN:
+        required: true
 jobs:
   go-cyclonedx-sbom:
     name: Generate SBOM with cyclonedx-gomod
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -30,8 +31,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: sbom.xml
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload as artifact (optional)
         uses: actions/upload-artifact@v4
