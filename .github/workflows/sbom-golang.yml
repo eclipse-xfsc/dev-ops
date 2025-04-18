@@ -25,15 +25,15 @@ jobs:
 
       - name: Generate SBOM with license info
         run: |
-          cyclonedx-gomod mod -licenses -output sbom.xml
+          cyclonedx-gomod mod -licenses -json -output sbom.json
 
       - name: Upload SBOM to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: sbom.xml
+          files: sbom.json
 
       - name: Upload as artifact (optional)
         uses: actions/upload-artifact@v4
         with:
           name: go-sbom
-          path: sbom.xml
+          path: sbom.json
