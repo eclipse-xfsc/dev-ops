@@ -1,12 +1,20 @@
 name: Reusable Go Test Workflow
 
 on:
-  workflow_call:  # Damit es aufrufbar ist
+  workflow_call:
     inputs:
       go-version:
         required: false
         type: string
         default: '1.24'
+      use-docker-compose:
+        required: false
+        type: boolean
+        default: false
+      compose-file:
+        required: false
+        type: string
+        default: 'docker-compose.yml'
 
 jobs:
   test:
@@ -24,6 +32,12 @@ jobs:
       - name: Install dependencies
         run: go mod tidy
 
+      - name: Start docker-compose (optional)
+        if: ${{ inputs.use-docker-compose }}
+        run: |
+          docker compose -f ${{ inputs.compose-file }} up -d
+          sleep 10  # Optional: Warte etwas, damit Services bereit sind
+
       - name: Check if tests exist
         id: check_tests
         run: |
@@ -36,3 +50,7 @@ jobs:
       - name: Run Go tests
         if: steps.check_tests.outputs.found == 'true'
         run: go test ./... -v
+
+      - name: Stop docker-compose (optional)
+        if: ${{ inputs.use-docker-compose }}
+        run: docker compose -f ${{ inputs.compose-file }} down
