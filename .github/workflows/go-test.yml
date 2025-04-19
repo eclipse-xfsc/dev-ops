@@ -27,7 +27,7 @@ jobs:
       - name: Check if tests exist
         id: check_tests
         run: |
-          if ls *_test.go */*_test.go >/dev/null 2>&1; then
+          if find . -type f -name '*_test.go' | grep -q .; then
             echo "found=true" >> $GITHUB_OUTPUT
           else
             echo "found=false" >> $GITHUB_OUTPUT
