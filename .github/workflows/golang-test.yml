@@ -1,0 +1,38 @@
+name: Reusable Go Test Workflow
+
+on:
+  workflow_call:  # Damit es aufrufbar ist
+    inputs:
+      go-version:
+        required: false
+        type: string
+        default: '1.24'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ inputs.go-version }}
+
+      - name: Install dependencies
+        run: go mod tidy
+
+      - name: Check if tests exist
+        id: check_tests
+        run: |
+          if ls *_test.go */*_test.go >/dev/null 2>&1; then
+            echo "found=true" >> $GITHUB_OUTPUT
+          else
+            echo "found=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run Go tests
+        if: steps.check_tests.outputs.found == 'true'
+        run: go test ./... -v
