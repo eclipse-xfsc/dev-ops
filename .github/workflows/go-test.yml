@@ -1,4 +1,4 @@
-name: Reusable Go Test Workflow
+name: Go Tests
 
 on:
   workflow_call:
@@ -29,27 +29,32 @@ jobs:
         with:
           go-version: ${{ inputs.go-version }}
 
-      - name: Install dependencies
-        run: go mod tidy
-
       - name: Start docker-compose (optional)
         if: ${{ inputs.use-docker-compose }}
         run: |
           docker compose -f ${{ inputs.compose-file }} up -d
-          sleep 10  # Optional: Warte etwas, damit Services bereit sind
+          sleep 10
 
-      - name: Check if tests exist
-        id: check_tests
+      - name: Find all go.mod files and run tests per module
         run: |
-          if find . -type f -name '*_test.go' | grep -q .; then
-            echo "found=true" >> $GITHUB_OUTPUT
-          else
-            echo "found=false" >> $GITHUB_OUTPUT
-          fi
+          set -e
+          find . -name 'go.mod' | while read modfile; do
+            moddir=$(dirname "$modfile")
+            echo "==> Testing module in $moddir"
+            cd "$moddir"
 
-      - name: Run Go tests
-        if: steps.check_tests.outputs.found == 'true'
-        run: go test ./... -v
+            echo "-> Running go mod tidy"
+            go mod tidy
+
+            if find . -type f -name '*_test.go' | grep -q .; then
+              echo "-> Found tests, running go test"
+              go test ./... -v
+            else
+              echo "-> No tests found in $moddir, skipping"
+            fi
+
+            cd - > /dev/null
+          done
 
       - name: Stop docker-compose (optional)
         if: ${{ inputs.use-docker-compose }}
