@@ -29,7 +29,13 @@ jobs:
             java -jar dash-licenses.jar \
               -repo "https://github.com/${{ github.repository }}" \
               package-lock.json
+          elif [ -f yarn.lock ]; then
+            echo "📦 Found yarn.lock – running Dash for yarn..."
+            java -jar dash-licenses.jar \
+              -repo "https://github.com/${{ github.repository }}" \
+              yarn.lock
           else
-            echo "❌ No supported Node.js lockfile found (pnpm-lock.yaml or package-lock.json)."
+            echo "❌ No supported Node.js lockfile found (pnpm-lock.yaml, package-lock.json, or yarn.lock)."
             exit 1
           fi
+
