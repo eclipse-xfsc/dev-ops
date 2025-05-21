@@ -3,6 +3,9 @@ name: Eclipse Dash License Scan (Node.js)
 on:
   workflow_call:
 
+permissions:
+  contents: read
+
 jobs:
   dash-license-scan:
     name: Eclipse Dash License Scan for Node.js
