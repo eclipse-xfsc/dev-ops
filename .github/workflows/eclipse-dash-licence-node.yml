@@ -29,7 +29,7 @@ jobs:
             java -jar dash-licenses.jar $DASH_ARGS package-lock.json $DASH_ARGSS
           elif [ -f yarn.lock ]; then
             echo "📦 Found yarn.lock – running Dash for yarn..."
-            java -jar dash-licenses.jar $DASH_ARGS yarn.lock  $DASH_ARGSS
+            java -jar dash-licenses.jar $DASH_ARGS yarn.lock $DASH_ARGSS
           else
             echo "❌ No supported Node.js lockfile found (pnpm-lock.yaml, package-lock.json, or yarn.lock)."
             exit 1
