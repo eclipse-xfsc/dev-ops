@@ -3,6 +3,9 @@ name: Eclipse Dash License Scan (Go) with Repo Info
 on:
    workflow_call:
 
+permissions:
+  contents: read
+
 jobs:
   dash-license-go:
     name: Scan Go module licenses with Eclipse Dash
