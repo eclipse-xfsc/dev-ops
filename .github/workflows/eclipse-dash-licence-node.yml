@@ -17,9 +17,11 @@ jobs:
             "https://repo.eclipse.org/service/local/artifact/maven/redirect?r=dash-licenses&g=org.eclipse.dash&a=org.eclipse.dash.licenses&v=LATEST"
 
       - name: Run Dash license scan for Node.js
+        env:
+          TOKEN: ${{ secrets.GITLAB_API_TOKEN }}
         run: |
           DASH_ARGS="-repo https://github.com/${{ github.repository }}"
-          DASH_ARGSS="-review -project technology.xfsc -token ${{ secrets.GITLAB_API_TOKEN}}"
+          DASH_ARGSS="-review -project technology.xfsc -token $TOKEN"
           
           if [ -f pnpm-lock.yaml ]; then
             echo "📦 Found pnpm-lock.yaml – running Dash for pnpm..."
