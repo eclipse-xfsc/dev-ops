@@ -7,7 +7,6 @@ jobs:
   dash-license-scan:
     name: Eclipse Dash License Scan for Node.js
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -19,23 +18,20 @@ jobs:
 
       - name: Run Dash license scan for Node.js
         run: |
+          DASH_ARGS="-repo https://github.com/${{ github.repository }} -review -project technology.xfsc -token ${{ secrets.GITLAB_API_TOKEN}}"
+          
           if [ -f pnpm-lock.yaml ]; then
             echo "📦 Found pnpm-lock.yaml – running Dash for pnpm..."
-            java -jar dash-licenses.jar \
-              -repo "https://github.com/${{ github.repository }}" \
-              pnpm-lock.yaml
+            java -jar dash-licenses.jar $DASH_ARGS pnpm-lock.yaml
           elif [ -f package-lock.json ]; then
             echo "📦 Found package-lock.json – running Dash for npm..."
-            java -jar dash-licenses.jar \
-              -repo "https://github.com/${{ github.repository }}" \
-              package-lock.json
+            java -jar dash-licenses.jar $DASH_ARGS package-lock.json
           elif [ -f yarn.lock ]; then
             echo "📦 Found yarn.lock – running Dash for yarn..."
-            java -jar dash-licenses.jar \
-              -repo "https://github.com/${{ github.repository }}" \
-              yarn.lock
+            java -jar dash-licenses.jar $DASH_ARGS yarn.lock
           else
             echo "❌ No supported Node.js lockfile found (pnpm-lock.yaml, package-lock.json, or yarn.lock)."
             exit 1
           fi
+
 
