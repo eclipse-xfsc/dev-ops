@@ -37,7 +37,8 @@ jobs:
           file dash-licenses.jar
 
       - name: Run license scan with repo metadata
+        env:
+          TOKEN: ${{ secrets.GITLAB_API_TOKEN }}
         run: |
-          java -jar dash-licenses.jar \
-            -repo "https://github.com/${{ github.repository }}" \
-            maven.deps
+          DASH_ARGS="-repo https://github.com/${{ github.repository }} -review -project technology.xfsc -token $TOKEN"
+          java -jar dash-licenses.jar maven.deps $DASH_ARGS
