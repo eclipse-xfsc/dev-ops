@@ -23,6 +23,8 @@ jobs:
       - name: Generate Go module list
         run: |
           go list -m -json all > go-modules.json
+        env:
+          GOFLAGS: -mod=mod
 
       - name: Download Eclipse Dash Licenses Tool
         run: |
