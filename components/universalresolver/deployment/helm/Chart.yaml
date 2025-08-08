@@ -1,7 +1,7 @@
 apiVersion: v2
 name: universal-resolver
 description: A Helm chart for deploying a simple service
-version: 0.1.6-tag
+version: 0.1.7-tag
 dependencies:
   - name: library
     version: 1.1.1

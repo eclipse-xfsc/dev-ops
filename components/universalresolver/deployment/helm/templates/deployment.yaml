@@ -62,7 +62,7 @@ spec:
     spec:
       containers:
         - name: jwk-resolver
-          image: transmute/restricted-resolver:latest
+          image: node-654e3bca7fbeeed18f81d7c7.ps-xaas.io/dev-ops/transmute-universal-resolver-driver:latest
 ---
 apiVersion: apps/v1
 kind: Deployment
