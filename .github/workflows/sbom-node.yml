@@ -5,30 +5,96 @@ on:
     secrets:
       GH_TOKEN:
         required: true
+
 jobs:
   generate-sbom:
     name: Node.js SBOM Generation
     runs-on: ubuntu-latest
     env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      NODE_VERSION: '20.x' # Standard, kann bei Bedarf überschrieben werden
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
+      - name: Set up Node.js (base)
         uses: actions/setup-node@v4
         with:
-          node-version: '20' # oder deine gewünschte Version
+          node-version: ${{ env.NODE_VERSION }}
 
-      - name: Install dependencies
-        run: npm ci
+      # --- Paketmanager erkennen ---
+      - name: Detect package manager
+        id: pm
+        shell: bash
+        run: |
+          if [[ -f yarn.lock ]]; then
+            echo "manager=yarn" >> "$GITHUB_OUTPUT"
+          elif [[ -f package-lock.json || -f npm-shrinkwrap.json ]]; then
+            echo "manager=npm" >> "$GITHUB_OUTPUT"
+          elif [[ -f package.json ]]; then
+            echo "manager=npm" >> "$GITHUB_OUTPUT"
+          else
+            echo "Kein package.json gefunden – Abbruch"
+            exit 1
+          fi
+          echo "Detected package manager: $(grep manager= $GITHUB_OUTPUT | cut -d= -f2)"
 
-      - name: Install cyclonedx-npm
-        run: npm install -g @cyclonedx/cyclonedx-npm
+      # --- Cache abhängig vom PM ---
+      - name: Enable cache for npm
+        if: ${{ steps.pm.outputs.manager == 'npm' }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
 
-      - name: Generate SBOM
-        run: cyclonedx-npm --output-file sbom.json --output-format json
+      - name: Enable cache for Yarn
+        if: ${{ steps.pm.outputs.manager == 'yarn' }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
 
+      # --- Dependencies installieren ---
+      - name: Install dependencies (Yarn)
+        if: ${{ steps.pm.outputs.manager == 'yarn' }}
+        shell: bash
+        run: |
+          corepack enable
+          yarn --version
+          if yarn --version | grep -qE '^1\.'; then
+            yarn install --frozen-lockfile
+          else
+            yarn install --immutable
+          fi
+
+      - name: Install dependencies (npm)
+        if: ${{ steps.pm.outputs.manager == 'npm' }}
+        shell: bash
+        run: |
+          if [[ -f package-lock.json || -f npm-shrinkwrap.json ]]; then
+            npm ci
+          else
+            npm install
+          fi
+
+      # --- SBOM generieren ---
+      - name: Generate SBOM (Yarn)
+        if: ${{ steps.pm.outputs.manager == 'yarn' }}
+        shell: bash
+        run: |
+          set -e
+          if yarn --version | grep -qE '^1\.'; then
+            npx --yes @cyclonedx/cyclonedx-npm@latest --output-file sbom.json --output-format json
+          else
+            yarn dlx -q @cyclonedx/yarn-plugin-cyclonedx --output-file sbom.json --output-format JSON
+          fi
+
+      - name: Generate SBOM (npm)
+        if: ${{ steps.pm.outputs.manager == 'npm' }}
+        run: npx --yes @cyclonedx/cyclonedx-npm@latest --output-file sbom.json --output-format json
+
+      # --- SBOM veröffentlichen ---
       - name: Upload SBOM to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
