@@ -29,6 +29,7 @@ jobs:
             -DskipTests=true \
             -Dmaven.javadoc.skip=true \
             -DappendOutput=true \
+            -DincludeScope=compile \
             -DoutputFile=/tmp/maven.deps
 
       - name: Download Eclipse Dash Licenses Tool
