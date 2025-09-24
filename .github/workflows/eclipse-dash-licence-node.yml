@@ -24,17 +24,16 @@ jobs:
           TOKEN: ${{ secrets.GITLAB_API_TOKEN }}
         run: |
           DASH_ARGS="-repo https://github.com/${{ github.repository }} -project technology.xfsc"
-          DASH_ARGS2="-review -token $TOKEN"
           
           if [ -f pnpm-lock.yaml ]; then
             echo "📦 Found pnpm-lock.yaml – running Dash for pnpm..."
-            java -Dorg.slf4j.simpleLogger.defaultLogLevel=debug -jar dash-licenses.jar $DASH_ARGS pnpm-lock.yaml $DASH_ARGS2
+            java -Dorg.slf4j.simpleLogger.defaultLogLevel=debug -jar dash-licenses.jar $DASH_ARGS pnpm-lock.yaml -review -token $TOKEN
           elif [ -f package-lock.json ]; then
             echo "📦 Found package-lock.json – running Dash for npm..."
-            java -Dorg.slf4j.simpleLogger.defaultLogLevel=debug -jar dash-licenses.jar $DASH_ARGS package-lock.json $DASH_ARGS2
+            java -Dorg.slf4j.simpleLogger.defaultLogLevel=debug -jar dash-licenses.jar $DASH_ARGS package-lock.json -review -token $TOKEN
           elif [ -f yarn.lock ]; then
             echo "📦 Found yarn.lock – running Dash for yarn..."
-            java -Dorg.slf4j.simpleLogger.defaultLogLevel=debug -jar dash-licenses.jar $DASH_ARGS yarn.lock $DASH_ARGS2
+            java -Dorg.slf4j.simpleLogger.defaultLogLevel=debug -jar dash-licenses.jar $DASH_ARGS yarn.lock -review -token $TOKEN
           else
             echo "❌ No supported Node.js lockfile found (pnpm-lock.yaml, package-lock.json, or yarn.lock)."
             exit 1
