@@ -23,8 +23,8 @@ jobs:
         env:
           TOKEN: ${{ secrets.GITLAB_API_TOKEN }}
         run: |
-            DASH_ARGS="-repo https://github.com/${{ github.repository }} -review -project technology.xfsc -token $TOKEN"
-          
+          DASH_ARGS="-repo https://github.com/${{ github.repository }} -review -project technology.xfsc -token $TOKEN"
+          if [ -f pnpm-lock.yaml ]; then
             echo "📦 Found pnpm-lock.yaml – running Dash for pnpm..."
             java -Dorg.slf4j.simpleLogger.defaultLogLevel=debug -jar dash-licenses.jar $DASH_ARGS pnpm-lock.yaml
           elif [ -f package-lock.json ]; then
