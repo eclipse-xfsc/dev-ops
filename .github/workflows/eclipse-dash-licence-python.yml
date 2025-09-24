@@ -42,4 +42,4 @@ jobs:
           TOKEN: ${{ secrets.GITLAB_API_TOKEN }}
         run: |
           DASH_ARGS="-repo https://github.com/${{ github.repository }} -review -project technology.xfsc -token $TOKEN"
-          java -jar dash-licenses/org.eclipse.dash.licenses.jar $DASH_ARGS - < packages.txt
+          java -Dorg.slf4j.simpleLogger.defaultLogLevel=debug -jar dash-licenses/org.eclipse.dash.licenses.jar $DASH_ARGS - < packages.txt
