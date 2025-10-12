@@ -27,9 +27,9 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install -r ${{ inputs.requirements_path }} --dry-run \
-          | grep -Poh "(?<=^Would install ).*$" \
-          | grep -oP '[^\s]+' \
-          | sed -E -e 's|(.+)\-([a-zA-Z0-9\.]+)|pypi/pypi/-/\1/\2/' \
+          | grep -Po "(?<=^Would install ).*$" \
+          | tr ' ' '\n' \
+          | sed -E 's|^([^=<>[:space:]]+)-([0-9][^[:space:]]*)$|pypi/pypi/-/\1/\2/|' \
           > packages.txt
 
       - name: Download Eclipse Dash License Tool
