@@ -60,8 +60,10 @@ jobs:
           HARBOR_CREDENTIALS: ${{ secrets.HARBOR_CREDENTIALS }}
         run: |   
           git clone https://github.com/eclipse-xfsc/dev-ops.git devops
+          echo "clone successfull"
           chmod +x ./devops/scripts/harborconfig.sh
           . ./devops/scripts/harborconfig.sh ${{ inputs.harbor_config}}
+          echo "harborconfig loaded"
           
           echo "$HARBOR_PASSWORD" | docker login $HARBOR_HOST --username "$HARBOR_USERNAME" --password-stdin
           
