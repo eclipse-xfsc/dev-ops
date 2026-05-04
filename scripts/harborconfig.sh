@@ -32,12 +32,12 @@ if [[ -z "${HARBOR_CREDENTIALS:-}" ]]; then
 fi
 
 # ---- Credentials aus Base64-String decodieren und Passwort extrahieren ----
-DECODED_JSON=$(echo "$HARBOR_CREDENTIALS" | base64 -d || {
+DECODED_JSON=$(echo -n "$HARBOR_CREDENTIALS" | base64 -d || {
   echo "Fehler: Base64-Dekodierung von HARBOR_CREDENTIALS fehlgeschlagen."
   exit 1
 })
 
-HARBOR_PASSWORD=$(echo "$DECODED_JSON" | jq -r --arg user "$RAW_USER" '.[$user]')
+HARBOR_PASSWORD=$(echo -n "$DECODED_JSON" | jq -r --arg user "$RAW_USER" '.[$user]')
 
 # ---- Passwort prüfen ----
 if [[ -z "$HARBOR_PASSWORD" || "$HARBOR_PASSWORD" == "null" ]]; then
