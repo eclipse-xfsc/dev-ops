@@ -24,7 +24,7 @@ while IFS='=' read -r key value; do
       ;;
   esac
 done < "$CONFIG_FILE"
-echo $HARBOR_USERNAME
+
 # ---- Prüfen, ob HARBOR_CREDENTIALS gesetzt ist ----
 if [[ -z "${HARBOR_CREDENTIALS:-}" ]]; then
   echo "Fehler: Umgebungsvariable HARBOR_CREDENTIALS ist nicht gesetzt."
@@ -38,7 +38,7 @@ DECODED_JSON=$(echo "$HARBOR_CREDENTIALS" | base64 -d || {
 })
 
 HARBOR_PASSWORD=$(echo "$DECODED_JSON" | jq -r --arg user "$RAW_USER" '.[$user]')
-
+echo -n "$HARBOR_PASSWORD" | sha256sum
 # ---- Passwort prüfen ----
 if [[ -z "$HARBOR_PASSWORD" || "$HARBOR_PASSWORD" == "null" ]]; then
   echo "Fehler: Kein Passwort für Benutzer '$RAW_USER' gefunden."
