@@ -20,7 +20,7 @@ while IFS='=' read -r key value; do
       ;;
     USER)
       RAW_USER="$value"  # Benutzername merken
-      export HARBOR_USERNAME="robot\$${value}"
+      export HARBOR_USERNAME='robot\$${value}'
       ;;
   esac
 done < "$CONFIG_FILE"
