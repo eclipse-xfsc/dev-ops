@@ -39,6 +39,8 @@ DECODED_JSON=$(echo "$HARBOR_CREDENTIALS" | base64 -d || {
 
 HARBOR_PASSWORD=$(echo "$DECODED_JSON" | jq -r --arg user "$RAW_USER" '.[$user]')
 echo -n "$HARBOR_PASSWORD" | sha256sum
+echo -n "test" | sha256sum
+
 # ---- Passwort prüfen ----
 if [[ -z "$HARBOR_PASSWORD" || "$HARBOR_PASSWORD" == "null" ]]; then
   echo "Fehler: Kein Passwort für Benutzer '$RAW_USER' gefunden."
