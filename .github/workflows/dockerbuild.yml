@@ -64,7 +64,7 @@ jobs:
           chmod +x ./devops/scripts/harborconfig.sh
           . ./devops/scripts/harborconfig.sh ${{ inputs.harbor_config}}
           echo "harborconfig loaded"
-          
+          echo "Connect $HARBOR_HOST"
           echo "$HARBOR_PASSWORD" | docker login $HARBOR_HOST --username "$HARBOR_USERNAME" --password-stdin
           
           IMAGE_TAG="${{ needs.setup.outputs.image_tag }}"
