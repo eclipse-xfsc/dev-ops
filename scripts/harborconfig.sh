@@ -24,7 +24,7 @@ while IFS='=' read -r key value; do
       ;;
   esac
 done < "$CONFIG_FILE"
-
+echo $HARBOR_USERNAME
 # ---- Prüfen, ob HARBOR_CREDENTIALS gesetzt ist ----
 if [[ -z "${HARBOR_CREDENTIALS:-}" ]]; then
   echo "Fehler: Umgebungsvariable HARBOR_CREDENTIALS ist nicht gesetzt."
