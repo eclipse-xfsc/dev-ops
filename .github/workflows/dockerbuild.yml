@@ -37,6 +37,11 @@ on:
         type: string
         default: "."
         required: false
+    secrets:
+      HARBOR_HOST:
+        required: true
+      HARBOR_CREDENTIALS:
+        required: true
 
 jobs:
   setup:
