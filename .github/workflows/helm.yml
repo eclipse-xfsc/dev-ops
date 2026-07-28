@@ -44,7 +44,10 @@ jobs:
           helm registry login "$HARBOR_HOST" \
             --username "$HARBOR_USERNAME" \
             --password "$HARBOR_PASSWORD"
-  
+
+          CHART_DIR="${{ inputs.buildContext}}"
+          cd "$CHART_DIR"
+
           GITHUB_TAG="${{ github.ref_name }}"
 
           # Aktuelle Chart-Version auslesen
@@ -112,6 +115,7 @@ jobs:
           
           echo "Updated Chart.yaml:"
           grep '^version:' Chart.yaml
+          echo "Build Dependencies"
           # Helm Dependency Build
           helm dependency build
           echo "Build Chart"
