@@ -109,12 +109,13 @@ jobs:
           echo "Updated Chart.yaml:"
           grep -E '^(name|version):' Chart.yaml
 
-          echo "Validate Chart"
-          helm lint .
 
           echo "Build Dependencies"
           helm dependency build
-
+          
+          echo "Validate Chart"
+          helm lint .
+          
           echo "Build Chart"
           helm package .
 
