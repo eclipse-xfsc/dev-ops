@@ -37,6 +37,7 @@ jobs:
           HARBOR_HOST: ${{ secrets.HARBOR_HOST }}
           HARBOR_CREDENTIALS: ${{ secrets.HARBOR_CREDENTIALS }}
         run: |
+          set -euo pipefail
           git clone https://github.com/eclipse-xfsc/dev-ops.git devops
           chmod +x ./devops/scripts/harborconfig.sh
           . ./devops/scripts/harborconfig.sh ${{ inputs.harbor_config}}
@@ -62,9 +63,18 @@ jobs:
       
           echo "Build Chart"
           helm package .
-      
-          CHART_NAME=$(grep '^name:' Chart.yaml | awk '{print $2}')
-          PACKAGE_FILE="${CHART_NAME}-*.tgz"
-      
-          echo "Push Chart"
-          helm push "$PACKAGE_FILE" oci://$HARBOR_HOST/$HARBOR_PROJECT
+          
+          CHART_NAME="$(sed -nE 's/^name:[[:space:]]*["'\'']?([^"'\'']+)["'\'']?[[:space:]]*$/\1/p' Chart.yaml)"
+          
+          PACKAGE_FILES=("${CHART_NAME}"-*.tgz)
+          
+          if [[ ${#PACKAGE_FILES[@]} -ne 1 || ! -f "${PACKAGE_FILES[0]}" ]]; then
+            echo "::error::Es wurde nicht genau ein Helm-Paket für '$CHART_NAME' gefunden."
+            printf 'Gefundene Kandidaten: %s\n' "${PACKAGE_FILES[@]}"
+            exit 1
+          fi
+          
+          PACKAGE_FILE="${PACKAGE_FILES[0]}"
+          
+          echo "Push Chart: $PACKAGE_FILE"
+          helm push "$PACKAGE_FILE" "oci://$HARBOR_HOST/$HARBOR_PROJECT"
