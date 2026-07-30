@@ -2,29 +2,34 @@ name: Deploy Helm Chart (Org Workflow)
 
 on:
   workflow_call:
-    inputs: 
-       buildContext:
-        description: 'path for build'
+    inputs:
+      buildContext:
+        description: "Path for build"
         type: string
         default: "helm"
         required: false
-       harbor_config:
-        description: 'path to harbor config'
+
+      harbor_config:
+        description: "Path to Harbor config"
         type: string
         default: "harbor.config"
         required: false
+
 jobs:
   setup:
     uses: eclipse-xfsc/dev-ops/.github/workflows/build-context.yml@main
     secrets: inherit
+
   helm-push:
     needs: setup
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
 
-      - name: Use IMAGE_TAG
-        run: | 
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show image tag
+        run: |
           echo "The image tag is: ${{ needs.setup.outputs.image_tag }}"
 
       - name: Set up Helm
@@ -38,43 +43,102 @@ jobs:
           HARBOR_CREDENTIALS: ${{ secrets.HARBOR_CREDENTIALS }}
         run: |
           set -euo pipefail
+
           git clone https://github.com/eclipse-xfsc/dev-ops.git devops
+
           chmod +x ./devops/scripts/harborconfig.sh
-          . ./devops/scripts/harborconfig.sh ${{ inputs.harbor_config}}
-      
+
+          . ./devops/scripts/harborconfig.sh \
+            "${{ inputs.harbor_config }}"
+
           helm registry login "$HARBOR_HOST" \
             --username "$HARBOR_USERNAME" \
             --password "$HARBOR_PASSWORD"
-      
+
           CHART_DIR="${{ inputs.buildContext }}"
-          cd "$CHART_DIR"
-      
-          echo "Using chart version: ${{ needs.setup.outputs.image_tag }}"
-      
-          sed -i -E \
-            "s|^version:[[:space:]]*.*$|version: ${{ needs.setup.outputs.image_tag }}|" \
-            Chart.yaml
-      
-          echo "Updated Chart.yaml:"
-          grep '^version:' Chart.yaml
-      
-          echo "Build Dependencies"
-          helm dependency build
-      
-          echo "Build Chart"
-          helm package .
-          
-          CHART_NAME="$(sed -nE 's/^name:[[:space:]]*["'\'']?([^"'\'']+)["'\'']?[[:space:]]*$/\1/p' Chart.yaml)"
-          
-          PACKAGE_FILES=("${CHART_NAME}"-*.tgz)
-          
-          if [[ ${#PACKAGE_FILES[@]} -ne 1 || ! -f "${PACKAGE_FILES[0]}" ]]; then
-            echo "::error::Es wurde nicht genau ein Helm-Paket für '$CHART_NAME' gefunden."
-            printf 'Gefundene Kandidaten: %s\n' "${PACKAGE_FILES[@]}"
+
+          if [[ ! -d "$CHART_DIR" ]]; then
+            echo "::error::Chart directory does not exist: $CHART_DIR"
             exit 1
           fi
-          
-          PACKAGE_FILE="${PACKAGE_FILES[0]}"
-          
+
+          cd "$CHART_DIR"
+
+          if [[ ! -f "Chart.yaml" ]]; then
+            echo "::error::Chart.yaml not found in: $CHART_DIR"
+            exit 1
+          fi
+
+          RAW_VERSION="${{ needs.setup.outputs.image_tag }}"
+          VERSION="${RAW_VERSION#v}"
+
+          SEMVER_REGEX='^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?(\+([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?$'
+
+          if [[ ! "$VERSION" =~ $SEMVER_REGEX ]]; then
+            echo "::error::Tag '$RAW_VERSION' is not a valid SemVer version."
+            exit 1
+          fi
+
+          CORE="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.${BASH_REMATCH[3]}"
+          PRERELEASE="${BASH_REMATCH[5]:-}"
+          BUILD_METADATA="${BASH_REMATCH[8]:-}"
+
+          if [[ -n "$PRERELEASE" ]]; then
+            CHART_VERSION="${CORE}-${PRERELEASE}.helm"
+          else
+            CHART_VERSION="${CORE}-helm"
+          fi
+
+          if [[ -n "$BUILD_METADATA" ]]; then
+            CHART_VERSION="${CHART_VERSION}+${BUILD_METADATA}"
+          fi
+
+          echo "Source version: $RAW_VERSION"
+          echo "Helm version:   $CHART_VERSION"
+
+          if grep -qE '^version:[[:space:]]*' Chart.yaml; then
+            sed -i -E \
+              "s|^version:[[:space:]]*.*$|version: ${CHART_VERSION}|" \
+              Chart.yaml
+          else
+            sed -i -E \
+              "/^name:[[:space:]]*/a version: ${CHART_VERSION}" \
+              Chart.yaml
+          fi
+
+          echo "Updated Chart.yaml:"
+          grep -E '^(name|version):' Chart.yaml
+
+          echo "Validate Chart"
+          helm lint .
+
+          echo "Build Dependencies"
+          helm dependency build
+
+          echo "Build Chart"
+          helm package .
+
+          CHART_NAME="$(
+            sed -nE \
+              's/^name:[[:space:]]*["'\'']?([^"'\'']+)["'\'']?[[:space:]]*$/\1/p' \
+              Chart.yaml
+          )"
+
+          if [[ -z "$CHART_NAME" ]]; then
+            echo "::error::Chart name could not be read from Chart.yaml."
+            exit 1
+          fi
+
+          PACKAGE_FILE="${CHART_NAME}-${CHART_VERSION}.tgz"
+
+          if [[ ! -f "$PACKAGE_FILE" ]]; then
+            echo "::error::Helm package not found: $PACKAGE_FILE"
+            echo "Available files:"
+            ls -la
+            exit 1
+          fi
+
           echo "Push Chart: $PACKAGE_FILE"
-          helm push "$PACKAGE_FILE" "oci://$HARBOR_HOST/$HARBOR_PROJECT"
+
+          helm push "$PACKAGE_FILE" \
+            "oci://$HARBOR_HOST/$HARBOR_PROJECT"
