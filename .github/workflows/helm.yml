@@ -33,97 +33,38 @@ jobs:
           version: v3.13.0
 
       - name: Find and Push Helm Charts
-        env: 
+        env:
           HARBOR_HOST: ${{ secrets.HARBOR_HOST }}
           HARBOR_CREDENTIALS: ${{ secrets.HARBOR_CREDENTIALS }}
         run: |
           git clone https://github.com/eclipse-xfsc/dev-ops.git devops
           chmod +x ./devops/scripts/harborconfig.sh
           . ./devops/scripts/harborconfig.sh ${{ inputs.harbor_config}}
-          
+      
           helm registry login "$HARBOR_HOST" \
             --username "$HARBOR_USERNAME" \
             --password "$HARBOR_PASSWORD"
-
-          CHART_DIR="${{ inputs.buildContext}}"
+      
+          CHART_DIR="${{ inputs.buildContext }}"
           cd "$CHART_DIR"
-
-          GITHUB_TAG="${{ github.ref_name }}"
-
-          # Aktuelle Chart-Version auslesen
-          CHART_VERSION="$(sed -nE 's/^version:[[:space:]]*["'\'']?([^"'\'']+)["'\'']?[[:space:]]*$/\1/p' Chart.yaml)"
-          
-          if [[ -z "$CHART_VERSION" ]]; then
-            echo "::error::Keine version in Chart.yaml gefunden."
-            exit 1
-          fi
-          
-          echo "GitHub tag:     $GITHUB_TAG"
-          echo "Chart version:  $CHART_VERSION"
-          
-          # Optionales führendes "v" für SemVer entfernen:
-          # v1.2.3 -> 1.2.3
-          NORMALIZED_TAG="${GITHUB_TAG#v}"
-          
-          # SemVer 2.0.0:
-          # 1.2.3
-          # 1.2.3-alpha.1
-          # 1.2.3+build.42
-          # 1.2.3-alpha.1+build.42
-          SEMVER_REGEX='^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$'
-          
-          if [[ "$NORMALIZED_TAG" =~ $SEMVER_REGEX ]]; then
-            TAG_IS_SEMVER=true
-            echo "GitHub tag is SemVer compatible."
-          else
-            TAG_IS_SEMVER=false
-            echo "GitHub tag is not SemVer compatible."
-          fi
-          
-          if [[ "$CHART_VERSION" == *"-tag"* ]]; then
-            # Platzhalter immer direkt durch den GitHub-Tag ersetzen
-            NEW_CHART_VERSION="${CHART_VERSION/-tag/-${GITHUB_TAG}}"
-          
-          elif [[ "$TAG_IS_SEMVER" == "true" ]]; then
-            # Ohne Platzhalter und bei gültigem SemVer:
-            # komplette Chart-Version durch den Tag ersetzen
-            NEW_CHART_VERSION="$NORMALIZED_TAG"
-          
-          else
-            # Nicht-SemVer-Tag als Build-Metadaten anhängen.
-            # Ungültige Zeichen werden ersetzt, damit die resultierende
-            # Helm-Chart-Version weiterhin SemVer-kompatibel bleibt.
-            TAG_METADATA="$(printf '%s' "$GITHUB_TAG" \
-              | sed -E 's/[^0-9A-Za-z.-]+/./g; s/^[.-]+//; s/[.-]+$//')"
-          
-            if [[ -z "$TAG_METADATA" ]]; then
-              echo "::error::Der GitHub-Tag kann nicht als SemVer-Build-Metadatum verwendet werden."
-              exit 1
-            fi
-          
-            # Bereits vorhandene Build-Metadaten entfernen, damit kein zweites "+"
-            # in der Version entsteht.
-            BASE_CHART_VERSION="${CHART_VERSION%%+*}"
-            NEW_CHART_VERSION="${BASE_CHART_VERSION}+${TAG_METADATA}"
-          fi
-          
-          echo "New chart version: $NEW_CHART_VERSION"
-          
+      
+          echo "Using chart version: ${{ needs.setup.outputs.image_tag }}"
+      
           sed -i -E \
-            "s|^version:[[:space:]]*.*$|version: ${NEW_CHART_VERSION}|" \
+            "s|^version:[[:space:]]*.*$|version: ${{ needs.setup.outputs.image_tag }}|" \
             Chart.yaml
-          
+      
           echo "Updated Chart.yaml:"
           grep '^version:' Chart.yaml
+      
           echo "Build Dependencies"
-          # Helm Dependency Build
           helm dependency build
+      
           echo "Build Chart"
-          # Helm Package
           helm package .
-
+      
           CHART_NAME=$(grep '^name:' Chart.yaml | awk '{print $2}')
-    
           PACKAGE_FILE="${CHART_NAME}-*.tgz"
+      
           echo "Push Chart"
-          helm push $PACKAGE_FILE oci://$HARBOR_HOST/$HARBOR_PROJECT
+          helm push "$PACKAGE_FILE" oci://$HARBOR_HOST/$HARBOR_PROJECT
