@@ -69,11 +69,22 @@ jobs:
               -Dcyclonedx.outputFormat=json \
               -Dcyclonedx.outputName=$SBOM_NAME 
 
-            mv ./target/bom.json sbom.json
+            mv ./target/bom.json "$SBOM_NAME"
 
             # Hochladen zum Release
             gh release upload "$TAG" "$SBOM_NAME" -R $TARGET_REPO --clobber
             echo "✅ SBOM for $TAG created and uploaded as $SBOM_NAME"
 
+            echo "sbom_path=temp-repo/$SBOM_NAME" >> "$GITHUB_ENV"
+
             cd ..
           done < tags.txt
+
+      # Parity with sbom-node.yml / sbom-python.yml, which upload the SBOM
+      # as a workflow-run artifact in addition to the release asset above.
+      - name: Upload SBOM as Artifact
+        if: env.sbom_path
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: ${{ env.sbom_path }}
