@@ -43,6 +43,7 @@ jobs:
       - name: Process tags
         run: |
           SBOM_NAME="${{ inputs.sbom_name }}.json"
+          mkdir -p sbom-artifacts
 
           while read -r TAG; do
             echo "🔍 Checking tag: $TAG"
@@ -71,11 +72,16 @@ jobs:
 
             mv ./target/bom.json "$SBOM_NAME"
 
+            # Copy out of temp-repo before the next iteration's rm -rf (and
+            # before the release upload below, in case that fails), and
+            # qualify the filename with the tag so per-tag SBOMs don't collide.
+            SAFE_TAG="${TAG//\//_}"
+            cp "$SBOM_NAME" "../sbom-artifacts/${SAFE_TAG}-${SBOM_NAME}"
+            echo "sbom_path=sbom-artifacts" >> "$GITHUB_ENV"
+
             # Hochladen zum Release
             gh release upload "$TAG" "$SBOM_NAME" -R $TARGET_REPO --clobber
             echo "✅ SBOM for $TAG created and uploaded as $SBOM_NAME"
-
-            echo "sbom_path=temp-repo/$SBOM_NAME" >> "$GITHUB_ENV"
 
             cd ..
           done < tags.txt
@@ -83,8 +89,10 @@ jobs:
       # Parity with sbom-node.yml / sbom-python.yml, which upload the SBOM
       # as a workflow-run artifact in addition to the release asset above.
       - name: Upload SBOM as Artifact
-        if: env.sbom_path
+        if: always() && env.sbom_path
         uses: actions/upload-artifact@v4
         with:
           name: sbom
           path: ${{ env.sbom_path }}
+          retention-days: 90
+          if-no-files-found: error
