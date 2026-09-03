@@ -16,7 +16,7 @@ jobs:
   scan-tags:
     runs-on: ubuntu-latest
     env:
-      GH_TOKEN: ${{ github.token }}
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
       TARGET_REPO: ${{ github.repository }}
     steps:
       - name: Checkout central repo (for logs only)
@@ -80,8 +80,11 @@ jobs:
             echo "sbom_path=sbom-artifacts" >> "$GITHUB_ENV"
 
             # Hochladen zum Release
-            gh release upload "$TAG" "$SBOM_NAME" -R $TARGET_REPO --clobber
-            echo "✅ SBOM for $TAG created and uploaded as $SBOM_NAME"
+            if gh release upload "$TAG" "$SBOM_NAME" -R $TARGET_REPO --clobber; then
+              echo "✅ SBOM for $TAG created and uploaded as $SBOM_NAME"
+            else
+              echo "::warning::release upload failed for $TAG (check contents: write on the caller); artifact still produced"
+            fi
 
             cd ..
           done < tags.txt
