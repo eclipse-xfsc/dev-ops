@@ -42,7 +42,12 @@ jobs:
 
       - name: Process tags
         run: |
-          SBOM_NAME="${{ inputs.sbom_name }}.json"
+          # Base name only; the commit-hash suffix is resolved per tag below
+          # (QA ask: "Commit-Hash im Dateinamen" — a fixed name collides
+          # across releases when SBOMs are re-generated for the same tag
+          # after a re-tag, and gives reviewers no way to tell which commit
+          # an already-uploaded SBOM was built from).
+          SBOM_BASENAME="${{ inputs.sbom_name }}"
           mkdir -p sbom-artifacts
 
           while read -r TAG; do
@@ -54,8 +59,8 @@ jobs:
               continue
             fi
 
-            if echo "$RELEASE_INFO" | grep -q "$SBOM_NAME"; then
-              echo "✅ SBOM already exists for $TAG ($SBOM_NAME)."
+            if echo "$RELEASE_INFO" | grep -qE "^${SBOM_BASENAME}-[0-9a-f]+\.json$"; then
+              echo "✅ SBOM already exists for $TAG (hash-named ${SBOM_BASENAME}-<sha>.json asset present)."
               continue
             fi
 
@@ -65,10 +70,16 @@ jobs:
             cd temp-repo
             git checkout "tags/$TAG"
 
+            # Commit hash of the tagged commit, embedded in the SBOM
+            # filename so the release asset is traceable to the exact
+            # source state it was generated from.
+            TAG_SHA=$(git rev-parse --short HEAD)
+            SBOM_NAME="${SBOM_BASENAME}-${TAG_SHA}.json"
+
             # SBOM erstellen
             mvn org.cyclonedx:cyclonedx-maven-plugin:2.7.9:makeAggregateBom \
               -Dcyclonedx.outputFormat=json \
-              -Dcyclonedx.outputName=$SBOM_NAME 
+              -Dcyclonedx.outputName=$SBOM_NAME
 
             mv ./target/bom.json "$SBOM_NAME"
 
