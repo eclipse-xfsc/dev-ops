@@ -7,6 +7,14 @@ on:
         required: false
         type: string
         default: '17'
+      release_tag:
+        description: >-
+          Existing release tag to attach the DEPENDENCIES summary to. Leave empty to use the release
+          that triggered the caller (release event); on schedule/dispatch without a tag, the summary
+          is only kept as a workflow artifact.
+        required: false
+        type: string
+        default: ''
 
 jobs:
   dash-license-maven:
@@ -14,8 +22,28 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Resolve target release tag
+        id: release
+        env:
+          INPUT_RELEASE_TAG: ${{ inputs.release_tag }}
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          if [ -n "$INPUT_RELEASE_TAG" ]; then
+            TAG="$INPUT_RELEASE_TAG"
+          elif [ "$EVENT_NAME" = "release" ]; then
+            TAG="$EVENT_RELEASE_TAG"
+          else
+            TAG=""
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Target release tag: '${TAG:-<none>}'"
+
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          # Scan the code state of the release being documented, not the caller's default ref.
+          ref: ${{ steps.release.outputs.tag || github.ref }}
 
       - name: Set up Java and Maven
         uses: actions/setup-java@v4
@@ -34,12 +62,46 @@ jobs:
 
       - name: Download Eclipse Dash Licenses Tool
         run: |
-          curl -sSL -o dash-licenses.jar "https://repo.eclipse.org/service/local/artifact/maven/redirect?r=dash-licenses&g=org.eclipse.dash&a=org.eclipse.dash.licenses&v=LATEST"
+          # --proto/--proto-redir pin the initial request and every redirect hop to HTTPS. The
+          # Nexus search endpoint answers 302 to the resolved asset on repo.eclipse.org, so the
+          # redirect must still be followed (-L) — it just may not downgrade to plain HTTP.
+          curl -sSfL --proto '=https' --proto-redir '=https' \
+            -o dash-licenses.jar \
+            "https://repo.eclipse.org/service/rest/v1/search/assets/download?sort=version&repository=dash-maven2-releases&maven.groupId=org.eclipse.dash&maven.artifactId=org.eclipse.dash.licenses&maven.extension=jar"
           file dash-licenses.jar
 
+      # Dash exits non-zero when it finds restricted or unresolved dependencies. That failure is the
+      # signal we want, so it is not swallowed; the summary it wrote is still published by the
+      # `if: always()` steps below so reviewers can see what was flagged.
       - name: Run license scan with repo metadata
         env:
           TOKEN: ${{ secrets.GITLAB_API_TOKEN }}
         run: |
-          DASH_ARGS="-repo https://github.com/${{ github.repository }} -review -project technology.xfsc -token $TOKEN"
+          # Never publish a stale summary: only the file written by this run may reach the steps below.
+          rm -f DEPENDENCIES
+          DASH_ARGS="-repo https://github.com/${{ github.repository }} -review -project technology.xfsc -token $TOKEN -summary DEPENDENCIES"
           java -Dorg.slf4j.simpleLogger.defaultLogLevel=debug -jar dash-licenses.jar /tmp/maven.deps $DASH_ARGS
+
+      - name: Upload DEPENDENCIES summary as workflow artifact
+        if: always() && hashFiles('DEPENDENCIES') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependencies-summary
+          path: DEPENDENCIES
+          retention-days: 90
+          if-no-files-found: error
+
+      # Release assets are the durable, public, citable copy (NF-4b); the artifact above is only a
+      # safety net. Requires `permissions: contents: write` on the calling workflow.
+      - name: Attach DEPENDENCIES summary to the release
+        if: always() && hashFiles('DEPENDENCIES') != '' && steps.release.outputs.tag != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+          TARGET_REPO: ${{ github.repository }}
+        run: |
+          SHORT_SHA="$(git rev-parse --short HEAD)"
+          ASSET="DEPENDENCIES-${SHORT_SHA}.txt"
+          cp DEPENDENCIES "$ASSET"
+          gh release upload "$RELEASE_TAG" "$ASSET" -R "$TARGET_REPO" --clobber
+          echo "Attached $ASSET to release $RELEASE_TAG"

@@ -16,7 +16,7 @@ jobs:
   scan-tags:
     runs-on: ubuntu-latest
     env:
-      GH_TOKEN: ${{ github.token }}
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
       TARGET_REPO: ${{ github.repository }}
     steps:
       - name: Checkout central repo (for logs only)
@@ -42,7 +42,13 @@ jobs:
 
       - name: Process tags
         run: |
-          SBOM_NAME="${{ inputs.sbom_name }}.json"
+          # Base name only; the commit-hash suffix is resolved per tag below
+          # (QA ask: "Commit-Hash im Dateinamen" — a fixed name collides
+          # across releases when SBOMs are re-generated for the same tag
+          # after a re-tag, and gives reviewers no way to tell which commit
+          # an already-uploaded SBOM was built from).
+          SBOM_BASENAME="${{ inputs.sbom_name }}"
+          mkdir -p sbom-artifacts
 
           while read -r TAG; do
             echo "🔍 Checking tag: $TAG"
@@ -53,8 +59,8 @@ jobs:
               continue
             fi
 
-            if echo "$RELEASE_INFO" | grep -q "$SBOM_NAME"; then
-              echo "✅ SBOM already exists for $TAG ($SBOM_NAME)."
+            if echo "$RELEASE_INFO" | grep -qE "^${SBOM_BASENAME}-[0-9a-f]+\.json$"; then
+              echo "✅ SBOM already exists for $TAG (hash-named ${SBOM_BASENAME}-<sha>.json asset present)."
               continue
             fi
 
@@ -64,16 +70,43 @@ jobs:
             cd temp-repo
             git checkout "tags/$TAG"
 
+            # Commit hash of the tagged commit, embedded in the SBOM
+            # filename so the release asset is traceable to the exact
+            # source state it was generated from.
+            TAG_SHA=$(git rev-parse --short HEAD)
+            SBOM_NAME="${SBOM_BASENAME}-${TAG_SHA}.json"
+
             # SBOM erstellen
             mvn org.cyclonedx:cyclonedx-maven-plugin:2.7.9:makeAggregateBom \
               -Dcyclonedx.outputFormat=json \
-              -Dcyclonedx.outputName=$SBOM_NAME 
+              -Dcyclonedx.outputName=$SBOM_NAME
 
-            mv ./target/bom.json sbom.json
+            mv ./target/bom.json "$SBOM_NAME"
+
+            # Copy out of temp-repo before the next iteration's rm -rf (and
+            # before the release upload below, in case that fails), and
+            # qualify the filename with the tag so per-tag SBOMs don't collide.
+            SAFE_TAG="${TAG//\//_}"
+            cp "$SBOM_NAME" "../sbom-artifacts/${SAFE_TAG}-${SBOM_NAME}"
+            echo "sbom_path=sbom-artifacts" >> "$GITHUB_ENV"
 
             # Hochladen zum Release
-            gh release upload "$TAG" "$SBOM_NAME" -R $TARGET_REPO --clobber
-            echo "✅ SBOM for $TAG created and uploaded as $SBOM_NAME"
+            if gh release upload "$TAG" "$SBOM_NAME" -R $TARGET_REPO --clobber; then
+              echo "✅ SBOM for $TAG created and uploaded as $SBOM_NAME"
+            else
+              echo "::warning::release upload failed for $TAG (check contents: write on the caller); artifact still produced"
+            fi
 
             cd ..
           done < tags.txt
+
+      # Parity with sbom-node.yml / sbom-python.yml, which upload the SBOM
+      # as a workflow-run artifact in addition to the release asset above.
+      - name: Upload SBOM as Artifact
+        if: always() && env.sbom_path
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: ${{ env.sbom_path }}
+          retention-days: 90
+          if-no-files-found: error
