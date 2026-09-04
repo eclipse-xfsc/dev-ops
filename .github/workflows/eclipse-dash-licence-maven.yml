@@ -62,7 +62,12 @@ jobs:
 
       - name: Download Eclipse Dash Licenses Tool
         run: |
-          curl -sSfL -o dash-licenses.jar "https://repo.eclipse.org/service/rest/v1/search/assets/download?sort=version&repository=dash-maven2-releases&maven.groupId=org.eclipse.dash&maven.artifactId=org.eclipse.dash.licenses&maven.extension=jar"
+          # --proto/--proto-redir pin the initial request and every redirect hop to HTTPS. The
+          # Nexus search endpoint answers 302 to the resolved asset on repo.eclipse.org, so the
+          # redirect must still be followed (-L) — it just may not downgrade to plain HTTP.
+          curl -sSfL --proto '=https' --proto-redir '=https' \
+            -o dash-licenses.jar \
+            "https://repo.eclipse.org/service/rest/v1/search/assets/download?sort=version&repository=dash-maven2-releases&maven.groupId=org.eclipse.dash&maven.artifactId=org.eclipse.dash.licenses&maven.extension=jar"
           file dash-licenses.jar
 
       # Dash exits non-zero when it finds restricted or unresolved dependencies. That failure is the
