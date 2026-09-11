@@ -92,7 +92,9 @@ jobs:
           if-no-files-found: error
 
       # Release assets are the durable, public, citable copy (NF-4b); the artifact above is only a
-      # safety net. Requires `permissions: contents: write` on the calling workflow.
+      # safety net. Needs `permissions: contents: write` on the calling workflow — a reusable
+      # workflow inherits the caller's ceiling and cannot raise it, so without that grant the
+      # upload warns rather than failing the job and the artifact above stays the fallback.
       - name: Attach DEPENDENCIES summary to the release
         if: always() && hashFiles('DEPENDENCIES') != '' && steps.release.outputs.tag != ''
         env:
@@ -103,5 +105,8 @@ jobs:
           SHORT_SHA="$(git rev-parse --short HEAD)"
           ASSET="DEPENDENCIES-${SHORT_SHA}.txt"
           cp DEPENDENCIES "$ASSET"
-          gh release upload "$RELEASE_TAG" "$ASSET" -R "$TARGET_REPO" --clobber
-          echo "Attached $ASSET to release $RELEASE_TAG"
+          if gh release upload "$RELEASE_TAG" "$ASSET" -R "$TARGET_REPO" --clobber; then
+            echo "✅ Attached $ASSET to release $RELEASE_TAG"
+          else
+            echo "::warning::release upload failed for $RELEASE_TAG (check contents: write on the caller); DEPENDENCIES artifact still produced"
+          fi
