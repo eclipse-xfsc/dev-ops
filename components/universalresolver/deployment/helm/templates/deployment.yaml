@@ -34,7 +34,7 @@ spec:
             - name: uniresolver_web_driver_url_did_jwk
               value: "http://universal-resolver-transmute-driver-service.{{ .Release.Namespace }}.svc.cluster.local:8080"
             - name: uniresolver_web_driver_url_did_web
-              value: "http://universal-resolver-transmute-driver-service.{{ .Release.Namespace }}.svc.cluster.local:8080"
+              value: "http://universal-resolver-uport-driver-service.{{ .Release.Namespace }}.svc.cluster.local:8081"
             - name: uniresolver_web_driver_url_did_peer
               value:  "http://universal-resolver-uport-driver-service.{{ .Release.Namespace }}.svc.cluster.local:8081"
 ---         
