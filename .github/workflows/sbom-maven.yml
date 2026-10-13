@@ -16,7 +16,7 @@ jobs:
   scan-tags:
     runs-on: ubuntu-latest
     env:
-      GH_TOKEN: ${{ secrets.token }}
+      GH_TOKEN: ${{ github.token }}
       TARGET_REPO: ${{ github.repository }}
     steps:
       - name: Checkout central repo (for logs only)
