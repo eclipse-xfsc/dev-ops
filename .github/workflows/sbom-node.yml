@@ -11,7 +11,7 @@ jobs:
     name: Node.js SBOM Generation
     runs-on: ubuntu-latest
     env:
-      GH_TOKEN: ${{ github.token }}
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
       NODE_VERSION: '20.x' # Standard, kann bei Bedarf überschrieben werden
 
     steps:
