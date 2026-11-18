@@ -9,34 +9,52 @@ jobs:
   detect-folders:
     runs-on: ubuntu-latest
     outputs:
-      matrix-folders: ${{ steps.detect.outputs.matrix-folders }}
+      docker-folders: ${{ steps.detect.outputs.docker-folders }}
+      helm-folders: ${{ steps.detect.outputs.helm-folders }}
+
     steps:
       - uses: actions/checkout@v4
 
-      - id: detect
+      - name: Detect Docker and Helm components
+        id: detect
+        shell: bash
         run: |
-          echo "🔍 Suche Komponenten..."
-          git fetch --prune --unshallow || true
+          set -euo pipefail
+          shopt -s nullglob
 
-          # Wenn Release, dann baue ALLE Komponenten
-          if [ "${{ github.event_name }}" == "release" ]; then
-            echo "📦 Release Event erkannt - Baue ALLE Komponenten!"
-            FOLDERS=$(find components -mindepth 1 -maxdepth 1 -type d | xargs -n 1 basename | jq -R -s -c 'split("\n")[:-1]')
-          else
-            echo "🛠 Workflow Dispatch erkannt - Baue ALLE Komponenten!" 
-            FOLDERS=$(find components -mindepth 1 -maxdepth 1 -type d | xargs -n 1 basename | jq -R -s -c 'split("\n")[:-1]')
-          fi
+          DOCKER_FOLDERS='[]'
+          HELM_FOLDERS='[]'
 
-          echo "📂 Gefundene Ordner: $FOLDERS"
-          echo "matrix-folders=$FOLDERS" >> $GITHUB_OUTPUT
+          for COMPONENT in components/*/; do
+            FOLDER="$(basename "$COMPONENT")"
 
+            if [[ -f "${COMPONENT}deployment/docker/Dockerfile" ]]; then
+              DOCKER_FOLDERS="$(
+                jq -c --arg folder "$FOLDER" \
+                  '. + [$folder]' <<< "$DOCKER_FOLDERS"
+              )"
+            fi
+
+            if [[ -f "${COMPONENT}deployment/helm/Chart.yaml" ]]; then
+              HELM_FOLDERS="$(
+                jq -c --arg folder "$FOLDER" \
+                  '. + [$folder]' <<< "$HELM_FOLDERS"
+              )"
+            fi
+          done
+
+          echo "Docker components: $DOCKER_FOLDERS"
+          echo "Helm components:   $HELM_FOLDERS"
+
+          echo "docker-folders=$DOCKER_FOLDERS" >> "$GITHUB_OUTPUT"
+          echo "helm-folders=$HELM_FOLDERS" >> "$GITHUB_OUTPUT"
 
   docker-build:
     needs: detect-folders
-    if: needs.detect-folders.outputs.matrix-folders != '[]'  # Nur wenn etwas geändertes da ist
+    if: ${{ needs.detect-folders.outputs.docker-folders != '[]' }}
     strategy:
       matrix:
-        folder: ${{ fromJson(needs.detect-folders.outputs.matrix-folders) }}
+        folder: ${{ fromJSON(needs.detect-folders.outputs.docker-folders) }}
     name: Build Docker Image for ${{ matrix.folder }}
     uses: ./.github/workflows/dockerbuild.yml
     secrets: inherit
@@ -47,12 +65,12 @@ jobs:
 
   helm-build:
     needs: detect-folders
-    if: needs.detect-folders.outputs.matrix-folders != '[]'  # Nur wenn etwas geändertes da ist
+    if: ${{ needs.detect-folders.outputs.helm-folders != '[]' }}
     strategy:
       matrix:
-        folder: ${{ fromJson(needs.detect-folders.outputs.matrix-folders) }}
+        folder: ${{ fromJSON(needs.detect-folders.outputs.helm-folders) }}
     name: Build Helm Chart for ${{ matrix.folder }}
-    secrets: inherit
     uses: ./.github/workflows/helm.yml
+    secrets: inherit
     with:
       buildContext: components/${{ matrix.folder }}/deployment/helm
