@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-keycloak
+  annotations:
+    {{- include "xfsc.annotations" .Values.injection.keycloak | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels: {app: {{ printf "%s-keycloak" .Release.Name | quote }}}
+  template:
+    metadata:
+      labels: {app: {{ printf "%s-keycloak" .Release.Name | quote }}}
+      annotations:
+        {{- include "xfsc.annotations" .Values.injection.keycloak | nindent 8 }}
+    spec:
+      containers:
+        - name: keycloak
+          image: {{ printf "%s:%s" .Values.image.repository .Values.image.tag | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args: ["start", "--optimized", "--http-enabled=true"]
+          ports: [{name: http, containerPort: 8080}]
+          readinessProbe:
+            tcpSocket: {port: http}
+            initialDelaySeconds: 15
+          env:
+            - {name: KC_HOSTNAME, value: {{ .Values.keycloak.hostname | quote }}}
+            - {name: KC_DB, value: postgres}
+            - {name: KC_BOOTSTRAP_ADMIN_USERNAME, value: {{ .Values.keycloak.bootstrapAdmin.username | quote }}}
+            - name: KC_BOOTSTRAP_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "xfsc.adminSecret" . | quote }}
+                  key: {{ .Values.keycloak.bootstrapAdmin.passwordSecretKey | quote }}
+            {{- if not .Values.injection.keycloak.enabled }}
+            - {name: NATS_URL, value: {{ .Values.nats.url | quote }}}
+            - {name: KC_DB_URL, value: {{ .Values.keycloak.database.url | quote }}}
+            - {name: KC_DB_USERNAME, value: {{ .Values.keycloak.database.username | quote }}}
+            - name: KC_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "xfsc.dbSecret" . | quote }}
+                  key: {{ .Values.keycloak.database.passwordSecretKey | quote }}
+            {{- end }}

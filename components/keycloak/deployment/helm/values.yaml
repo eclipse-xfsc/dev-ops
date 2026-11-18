@@ -1,0 +1,55 @@
+replicaCount: 1
+image:
+  repository: docker pull node-654e3bca7fbeeed18f81d7c7.de-west-1.xaas.plus.cloud/dev-ops/keycloak
+  tag: latest
+  pullPolicy: Always
+nats:
+  url: nats://nats:4222
+keycloak:
+  hostname: keycloak.example.com
+  database:
+    url: jdbc:postgresql://postgres:5432/keycloak
+    username: keycloak
+    passwordSecretName: ""
+    passwordSecretKey: password
+  bootstrapAdmin:
+    username: admin
+    passwordSecretName: ""
+    passwordSecretKey: password
+  provisioning:
+    enabled: true
+    clientId: xfsc-provisioner
+    # Full master-realm admin access; reduce permissions after bootstrap if appropriate.
+    role: admin
+    image: python:3.12-alpine
+    timeoutSeconds: 300
+controller:
+  enabled: true
+  image:
+    repository: xfsc-identity-controller
+    tag: latest
+    pullPolicy: IfNotPresent
+  adminUrl: ""
+  adminRealm: master
+  clientId: xfsc-provisioner
+  clientSecret:
+    secretName: ""
+    secretKey: client-secret
+injection:
+  keycloak:
+    enabled: false
+    needs: postgres,nats
+    replacements:
+      POSTGRES_URL: KC_DB_URL
+      POSTGRES_USER: KC_DB_USERNAME
+      POSTGRES_PASSWORD: KC_DB_PASSWORD
+  controller:
+    enabled: false
+    needs: nats
+    replacements: {}
+# Operator ResourceClaim requires an existing ESO ExternalSecret, and is opt-in.
+resourceClaim:
+  enabled: false
+  provider: postgres
+  externalSecretName: ""
+  database: ""

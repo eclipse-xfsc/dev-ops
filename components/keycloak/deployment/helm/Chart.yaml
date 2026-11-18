@@ -1,0 +1,4 @@
+apiVersion: v2
+name: xfsc-keycloak
+version: 0.1.0
+appVersion: "26.4.0"

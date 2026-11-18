@@ -1,0 +1,17 @@
+{{- if .Values.resourceClaim.enabled }}
+{{- required "resourceClaim.externalSecretName must reference an existing ExternalSecret" .Values.resourceClaim.externalSecretName -}}
+apiVersion: resources.xfsc.io/v1alpha1
+kind: ResourceClaim
+metadata:
+  name: {{ .Release.Name }}-postgres
+spec:
+  type: postgres
+  providerRef:
+    name: {{ .Values.resourceClaim.provider | quote }}
+  externalSecretRef:
+    name: {{ .Values.resourceClaim.externalSecretName | quote }}
+  parameters:
+    database: {{ default (.Release.Name | replace "-" "_") .Values.resourceClaim.database | quote }}
+    schemas: [public]
+    extensions: []
+{{- end }}
