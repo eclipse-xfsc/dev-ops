@@ -95,6 +95,7 @@ jobs:
     needs: detect-folders
     if: ${{ needs.detect-folders.outputs.docker-builds != '[]' }}
     strategy:
+      fail-fast: false
       matrix:
         include: ${{ fromJSON(needs.detect-folders.outputs.docker-builds) }}
     name: Build Docker Image for ${{ matrix.service }}
@@ -109,6 +110,7 @@ jobs:
     needs: detect-folders
     if: ${{ needs.detect-folders.outputs.helm-builds != '[]' }}
     strategy:
+      fail-fast: false
       matrix:
         include: ${{ fromJSON(needs.detect-folders.outputs.helm-builds) }}
     name: Build Helm Chart at ${{ matrix.chart }}
