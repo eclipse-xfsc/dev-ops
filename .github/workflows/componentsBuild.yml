@@ -9,68 +9,110 @@ jobs:
   detect-folders:
     runs-on: ubuntu-latest
     outputs:
-      docker-folders: ${{ steps.detect.outputs.docker-folders }}
-      helm-folders: ${{ steps.detect.outputs.helm-folders }}
+      docker-builds: ${{ steps.detect.outputs.docker-builds }}
+      helm-builds: ${{ steps.detect.outputs.helm-builds }}
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Detect Docker and Helm components
+      - name: Find Docker and Helm deployments recursively
         id: detect
-        shell: bash
+        shell: python
         run: |
-          set -euo pipefail
-          shopt -s nullglob
+          import json
+          import os
+          import re
+          from pathlib import Path
 
-          DOCKER_FOLDERS='[]'
-          HELM_FOLDERS='[]'
+          root = Path("components")
+          docker_builds = []
+          helm_builds = []
+          service_paths = {}
 
-          for COMPONENT in components/*/; do
-            FOLDER="$(basename "$COMPONENT")"
+          if root.is_dir():
+              for dockerfile in sorted(root.rglob("Dockerfile")):
+                  if not dockerfile.is_file():
+                      continue
 
-            if [[ -f "${COMPONENT}deployment/docker/Dockerfile" ]]; then
-              DOCKER_FOLDERS="$(
-                jq -c --arg folder "$FOLDER" \
-                  '. + [$folder]' <<< "$DOCKER_FOLDERS"
-              )"
-            fi
+                  if dockerfile.parts[-3:] != (
+                      "deployment", "docker", "Dockerfile"
+                  ):
+                      continue
 
-            if [[ -f "${COMPONENT}deployment/helm/Chart.yaml" ]]; then
-              HELM_FOLDERS="$(
-                jq -c --arg folder "$FOLDER" \
-                  '. + [$folder]' <<< "$HELM_FOLDERS"
-              )"
-            fi
-          done
+                  context = dockerfile.parents[2]
+                  relative = context.relative_to(root).as_posix()
 
-          echo "Docker components: $DOCKER_FOLDERS"
-          echo "Helm components:   $HELM_FOLDERS"
+                  # Beispiel: service-a/modules/worker
+                  # wird zu: service-a-modules-worker
+                  service = re.sub(
+                      r"[^a-z0-9._-]+", "-", relative.lower()
+                  ).strip("._-")
 
-          echo "docker-folders=$DOCKER_FOLDERS" >> "$GITHUB_OUTPUT"
-          echo "helm-folders=$HELM_FOLDERS" >> "$GITHUB_OUTPUT"
+                  if not service:
+                      raise ValueError(
+                          f"Cannot derive service name from {context}"
+                      )
+
+                  if service in service_paths:
+                      raise ValueError(
+                          f"Duplicate service name '{service}': "
+                          f"{service_paths[service]} and {context}"
+                      )
+
+                  service_paths[service] = str(context)
+
+                  docker_builds.append({
+                      "dockerfile": dockerfile.as_posix(),
+                      "context": context.as_posix(),
+                      "service": service,
+                  })
+
+              for chart in sorted(root.rglob("Chart.yaml")):
+                  if not chart.is_file():
+                      continue
+
+                  if chart.parts[-3:] != (
+                      "deployment", "helm", "Chart.yaml"
+                  ):
+                      continue
+
+                  helm_builds.append({
+                      "chart": chart.parent.as_posix(),
+                  })
+
+          outputs = {
+              "docker-builds": docker_builds,
+              "helm-builds": helm_builds,
+          }
+
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              for name, builds in outputs.items():
+                  value = json.dumps(builds, separators=(",", ":"))
+                  print(f"{name}: {value}")
+                  output.write(f"{name}={value}\n")
 
   docker-build:
     needs: detect-folders
-    if: ${{ needs.detect-folders.outputs.docker-folders != '[]' }}
+    if: ${{ needs.detect-folders.outputs.docker-builds != '[]' }}
     strategy:
       matrix:
-        folder: ${{ fromJSON(needs.detect-folders.outputs.docker-folders) }}
-    name: Build Docker Image for ${{ matrix.folder }}
+        include: ${{ fromJSON(needs.detect-folders.outputs.docker-builds) }}
+    name: Build Docker Image for ${{ matrix.service }}
     uses: ./.github/workflows/dockerbuild.yml
     secrets: inherit
     with:
-      dockerfile: components/${{ matrix.folder }}/deployment/docker/Dockerfile
-      buildContext: components/${{ matrix.folder }}
-      service: ${{ matrix.folder }}
+      dockerfile: ${{ matrix.dockerfile }}
+      buildContext: ${{ matrix.context }}
+      service: ${{ matrix.service }}
 
   helm-build:
     needs: detect-folders
-    if: ${{ needs.detect-folders.outputs.helm-folders != '[]' }}
+    if: ${{ needs.detect-folders.outputs.helm-builds != '[]' }}
     strategy:
       matrix:
-        folder: ${{ fromJSON(needs.detect-folders.outputs.helm-folders) }}
-    name: Build Helm Chart for ${{ matrix.folder }}
+        include: ${{ fromJSON(needs.detect-folders.outputs.helm-builds) }}
+    name: Build Helm Chart at ${{ matrix.chart }}
     uses: ./.github/workflows/helm.yml
     secrets: inherit
     with:
-      buildContext: components/${{ matrix.folder }}/deployment/helm
+      buildContext: ${{ matrix.chart }}
