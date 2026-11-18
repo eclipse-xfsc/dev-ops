@@ -39,6 +39,7 @@ jobs:
         folder: ${{ fromJson(needs.detect-folders.outputs.matrix-folders) }}
     name: Build Docker Image for ${{ matrix.folder }}
     uses: ./.github/workflows/dockerbuild.yml
+    secrets: inherit
     with:
       dockerfile: components/${{ matrix.folder }}/deployment/docker/Dockerfile
       buildContext: components/${{ matrix.folder }}
@@ -51,6 +52,7 @@ jobs:
       matrix:
         folder: ${{ fromJson(needs.detect-folders.outputs.matrix-folders) }}
     name: Build Helm Chart for ${{ matrix.folder }}
+    secrets: inherit
     uses: ./.github/workflows/helm.yml
     with:
       buildContext: components/${{ matrix.folder }}/deployment/helm
