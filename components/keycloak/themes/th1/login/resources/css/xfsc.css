@@ -1,0 +1,463 @@
+/* Neutral sign-in theme — classic Keycloak parent, entirely local assets. */
+@font-face {
+  font-family: "Titillium Web";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("font/TitilliumWeb-Regular.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Titillium Web";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("font/TitilliumWeb-SemiBold.woff2") format("woff2");
+}
+:root {
+  --xfsc-primary: #000094;
+  --xfsc-navy: #0c1b5a;
+  --xfsc-accent: #ba00ff;
+  --xfsc-text: #2a2a2a;
+  --xfsc-muted: #555b6a;
+  --xfsc-line: #dce0e9;
+  --xfsc-surface: #fff;
+  --xfsc-background: #f7f8fc;
+  --xfsc-danger: #a40000;
+  --xfsc-success: #13812d;
+}
+html.login-pf {
+  min-height: 100%;
+  background: var(--xfsc-background);
+}
+.login-pf body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--xfsc-background);
+  color: var(--xfsc-text);
+  font-family:
+    "Titillium Web",
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+}
+.login-pf-page {
+  min-height: 100vh;
+  padding: 0 0 48px;
+}
+.login-pf-page #kc-header {
+  margin: 0;
+  padding: 20px 32px;
+  background: var(--xfsc-surface);
+  border-bottom: 1px solid var(--xfsc-line);
+  color: var(--xfsc-navy);
+}
+.login-pf-page #kc-header-wrapper {
+  box-sizing: border-box;
+  max-width: 1180px;
+  min-height: 52px;
+  margin: 0 auto;
+  padding: 4px 0;
+  background: none;
+  color: var(--xfsc-navy);
+  font-size: 28px;
+  line-height: 44px;
+  font-weight: 600;
+  text-align: left;
+  text-transform: none;
+  letter-spacing: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.login-pf-page .card-pf {
+  box-sizing: border-box;
+  position: relative;
+  width: calc(100% - 40px);
+  max-width: 480px;
+  margin: 56px auto 0;
+  padding: 32px 36px 36px;
+  background: var(--xfsc-surface);
+  border: 1px solid var(--xfsc-line);
+  border-radius: 14px;
+  box-shadow: 0 8px 32px rgba(12, 27, 90, 0.045);
+}
+.login-pf-page .login-pf-header {
+  margin: 0 0 24px;
+  text-align: left;
+}
+#kc-page-title {
+  margin: 0 0 12px;
+  color: var(--xfsc-navy);
+  font-size: 30px;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  text-align: left;
+}
+#kc-content,
+#kc-content-wrapper {
+  margin: 0;
+  padding: 0;
+}
+#kc-form {
+  margin: 0;
+}
+#kc-form-wrapper {
+  width: 100%;
+  padding: 0;
+  float: none;
+}
+#kc-form-login .form-group,
+#kc-register-form .form-group,
+#kc-reset-password-form .form-group {
+  margin-bottom: 20px;
+}
+.login-pf-page label,
+.login-pf-page .control-label {
+  color: var(--xfsc-navy);
+  font-size: 16px;
+  font-weight: 600;
+}
+.login-pf-page
+  input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not(
+    [type="submit"]
+  ):not([type="button"]),
+.login-pf-page select,
+.login-pf-page textarea {
+  box-sizing: border-box;
+  min-height: 48px;
+  padding: 10px 12px;
+  background: var(--xfsc-surface);
+  color: var(--xfsc-text);
+  border: 1px solid #8791a5;
+  border-radius: 7px;
+  font: inherit;
+  line-height: 1.5;
+  box-shadow: none;
+}
+.login-pf-page
+  input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not(
+    [type="submit"]
+  ):not([type="button"]) {
+  width: 100%;
+}
+.login-pf-page input::placeholder {
+  color: var(--xfsc-muted);
+  opacity: 1;
+}
+.login-pf-page input:focus,
+.login-pf-page select:focus,
+.login-pf-page textarea:focus {
+  border-color: var(--xfsc-primary);
+  outline: 2px solid var(--xfsc-primary);
+  outline-offset: 1px;
+  box-shadow: none;
+}
+.login-pf-page input[aria-invalid="true"] {
+  border-color: var(--xfsc-danger);
+}
+.login-pf-page a {
+  color: var(--xfsc-primary);
+  text-decoration: none;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.login-pf-page a:hover {
+  text-decoration: underline;
+  color: var(--xfsc-navy);
+}
+.login-pf-page a:focus-visible,
+.login-pf-page button:focus-visible,
+.login-pf-page input[type="submit"]:focus-visible {
+  outline: 3px solid var(--xfsc-accent);
+  outline-offset: 3px;
+}
+.login-pf-page .btn-primary,
+.login-pf-page .pf-c-button.pf-m-primary,
+#kc-login {
+  box-sizing: border-box;
+  min-height: 48px;
+  padding: 11px 20px;
+  border: 1px solid var(--xfsc-primary);
+  border-radius: 7px;
+  background: var(--xfsc-primary);
+  background-image: none;
+  color: #fff;
+  font:
+    600 18px/1.4 "Titillium Web",
+    system-ui,
+    sans-serif;
+  text-shadow: none;
+  box-shadow: none;
+  white-space: normal;
+}
+.login-pf-page .btn-primary:hover,
+.login-pf-page .pf-c-button.pf-m-primary:hover,
+#kc-login:hover {
+  background: var(--xfsc-navy);
+  border-color: var(--xfsc-navy);
+}
+.login-pf-page .btn-primary:disabled,
+.login-pf-page .btn-primary[aria-disabled="true"],
+#kc-login:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+#kc-form-buttons {
+  margin: 24px 0 0;
+  padding: 0;
+}
+#kc-login,
+.login-pf-page .btn-block {
+  width: 100%;
+}
+.login-pf-page .pf-c-input-group,
+.login-pf-page .input-group {
+  display: flex;
+  align-items: stretch;
+  max-width: 100%;
+}
+.login-pf-page .pf-c-input-group > input,
+.login-pf-page .input-group > input {
+  min-width: 0;
+  flex: 1;
+}
+.login-pf-page .pf-c-input-group > button,
+.login-pf-page .input-group button {
+  min-width: 44px;
+  background: #fff;
+  border: 1px solid #8791a5;
+  color: var(--xfsc-primary);
+  border-radius: 7px;
+  font-size: 16px;
+}
+.login-pf-page input[type="checkbox"],
+.login-pf-page input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--xfsc-primary);
+  vertical-align: middle;
+}
+.login-pf-page .checkbox label,
+.login-pf-page .radio label {
+  font-weight: 400;
+  color: var(--xfsc-muted);
+}
+.login-pf-page .login-pf-settings {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 6px;
+  margin-bottom: 8px;
+}
+#kc-form-options {
+  float: none;
+  margin: 0;
+  padding: 0;
+}
+#kc-form-options .checkbox {
+  margin: 0;
+}
+#kc-info {
+  margin: 28px 0 0;
+  padding: 0;
+}
+#kc-info-wrapper {
+  box-sizing: border-box;
+  margin: 0 -36px -36px;
+  padding: 20px 36px;
+  background: #f6f7fb;
+  border-top: 1px solid var(--xfsc-line);
+  border-radius: 0 0 14px 14px;
+  color: var(--xfsc-muted);
+  font-size: 16px;
+  text-align: center;
+}
+#kc-registration {
+  margin: 0;
+}
+#kc-locale {
+  position: relative;
+  top: auto;
+  right: auto;
+  float: none;
+  min-height: 36px;
+  margin: 0 0 24px;
+  text-align: right;
+  z-index: 5;
+}
+#kc-locale-wrapper {
+  position: relative;
+  display: inline-block;
+}
+#kc-locale-dropdown {
+  display: inline-block;
+  text-align: left;
+}
+#kc-current-locale-link {
+  display: inline-block;
+  min-width: 64px;
+  padding: 6px 12px;
+  border: 1px solid var(--xfsc-line);
+  border-radius: 6px;
+  color: var(--xfsc-primary);
+  font-size: 16px;
+  line-height: 24px;
+}
+#kc-locale ul {
+  background: #fff;
+  border: 1px solid var(--xfsc-line);
+  border-radius: 7px;
+  padding: 6px;
+  box-shadow: 0 8px 24px rgba(12, 27, 90, 0.08);
+}
+#kc-locale ul a {
+  display: block;
+  padding: 8px 12px;
+  font-size: 16px;
+  color: var(--xfsc-navy);
+}
+#kc-locale ul a:hover,
+#kc-locale ul a:focus {
+  background: #f0f0ff;
+  color: var(--xfsc-primary);
+}
+#kc-locale-dropdown:focus-within ul {
+  display: block;
+}
+.login-pf-page .alert,
+.login-pf-page .pf-c-alert {
+  margin: 0 0 22px;
+  padding: 14px 16px;
+  border: 1px solid var(--xfsc-line);
+  border-radius: 7px;
+  background: #f0f3ff;
+  color: var(--xfsc-navy);
+  font-size: 16px;
+  overflow-wrap: anywhere;
+}
+.login-pf-page .alert-error,
+.login-pf-page .pf-m-danger {
+  background: #fff3f1;
+  border-color: #eab8b3;
+  color: var(--xfsc-danger);
+}
+.login-pf-page .alert-warning,
+.login-pf-page .pf-m-warning {
+  background: #fff7e7;
+  border-color: #e2cf9f;
+  color: #624200;
+}
+.login-pf-page .alert-success,
+.login-pf-page .pf-m-success {
+  background: #eef8ef;
+  border-color: #a5d1ae;
+  color: var(--xfsc-success);
+}
+.login-pf-page .kc-feedback-text,
+.login-pf-page .pf-m-error .pf-c-helper-text__item-text {
+  color: var(--xfsc-danger);
+  font-size: 15px;
+}
+#kc-social-providers {
+  border: 0;
+  padding: 0;
+  margin-top: 28px;
+}
+#kc-social-providers h2 {
+  font-size: 16px;
+  color: var(--xfsc-muted);
+  font-weight: 400;
+  margin-bottom: 14px;
+}
+#kc-social-providers ul {
+  padding-left: 0;
+}
+#kc-social-providers a {
+  min-height: 46px;
+  border-radius: 7px;
+  border: 1px solid var(--xfsc-line);
+  background: white;
+  color: var(--xfsc-navy);
+}
+#kc-username {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--xfsc-navy);
+  margin-bottom: 20px;
+}
+#kc-attempted-username {
+  overflow-wrap: anywhere;
+}
+.subtitle,
+.instruction,
+#kc-content-wrapper > p {
+  color: var(--xfsc-muted);
+  font-size: 16px;
+  line-height: 1.6;
+}
+.kc-login-tooltip {
+  color: var(--xfsc-primary);
+}
+html[dir="rtl"] #kc-header-wrapper {
+  padding: 4px 0;
+  background-position: right center;
+  text-align: right;
+}
+@media (max-width: 600px) {
+  .login-pf-page #kc-header {
+    padding: 16px 20px;
+  }
+  .login-pf-page #kc-header-wrapper {
+    font-size: 24px;
+    min-height: 44px;
+    line-height: 36px;
+    background-size: 40px;
+    padding-left: 0;
+  }
+  .login-pf-page .card-pf {
+    width: calc(100% - 32px);
+    margin-top: 28px;
+    padding: 24px;
+    border-radius: 12px;
+  }
+  #kc-page-title {
+    font-size: 27px;
+  }
+  #kc-info-wrapper {
+    margin: 0 -24px -24px;
+    padding: 18px 24px;
+    border-radius: 0 0 12px 12px;
+  }
+  #kc-locale {
+    margin-bottom: 20px;
+  }
+  .login-pf-page .login-pf-settings {
+    align-items: flex-start;
+  }
+  html[dir="rtl"] #kc-header-wrapper {
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  * {
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Keep the realm label from Keycloak; do not introduce product branding. */
+#kc-header-wrapper .kc-logo-text {
+  background: none;
+  width: auto;
+  height: auto;
+  margin: 0;
+}
+#kc-header-wrapper .kc-logo-text span {
+  display: inline;
+}
