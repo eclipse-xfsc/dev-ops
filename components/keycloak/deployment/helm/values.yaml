@@ -6,7 +6,8 @@ image:
 nats:
   url: nats://nats:4222
 keycloak:
-  hostname: keycloak.example.com
+  hostname: "https://auth.example.com"
+  optimized: false
   database:
     url: jdbc:postgresql://postgres:5432/keycloak
     username: keycloak
@@ -44,7 +45,7 @@ injection:
       POSTGRES_USER: KC_DB_USERNAME
       POSTGRES_PASSWORD: KC_DB_PASSWORD
   controller:
-    enabled: false
+    enabled: true
     needs: nats
     replacements: {}
 # Operator ResourceClaim requires an existing ESO ExternalSecret, and is opt-in.
