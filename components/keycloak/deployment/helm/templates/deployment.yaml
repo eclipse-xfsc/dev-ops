@@ -49,10 +49,6 @@ spec:
             - name: KC_PROXY_HEADERS
               value: "xforwarded"
 
-            # Database type is required independently of injection
-            - name: KC_DB
-              value: "postgres"
-
             # Bootstrap admin
             - name: KC_BOOTSTRAP_ADMIN_USERNAME
               value: {{ .Values.keycloak.bootstrapAdmin.username | quote }}
@@ -62,6 +58,25 @@ spec:
                 secretKeyRef:
                   name: {{ include "xfsc.adminSecret" . | quote }}
                   key: {{ .Values.keycloak.bootstrapAdmin.passwordSecretKey | quote }}
+
+            {{- if .Values.injection.keycloak.enabled }}
+            - name: KC_DB
+              value: {{ .Release.Name | replace "-" "_" }}
+
+            - name: KC_DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-postgres-credentials
+                  key: "username"
+
+            - name: KC_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-postgres-credentials
+                  key: "password"
+
+            {{- end }}
+
 
             {{- if not .Values.injection.keycloak.enabled }}
             # Original variables only without operator injection
@@ -79,4 +94,8 @@ spec:
                 secretKeyRef:
                   name: {{ include "xfsc.dbSecret" . | quote }}
                   key: {{ .Values.keycloak.database.passwordSecretKey | quote }}
+
+                        # Database type is required independently of injection
+            - name: KC_DB
+              value: "postgres"
             {{- end }}

@@ -41,7 +41,7 @@ injection:
     enabled: false
     needs: postgres,nats
     replacements:
-      POSTGRES_URL: KC_DB_URL
+      POSTGRES_HOST: KC_DB_URL_HOST
       POSTGRES_USER: KC_DB_USERNAME
       POSTGRES_PASSWORD: KC_DB_PASSWORD
   controller:
@@ -53,4 +53,4 @@ resourceClaim:
   enabled: false
   provider: postgres
   externalSecretName: ""
-  database: ""
+  database: "keycloak"
