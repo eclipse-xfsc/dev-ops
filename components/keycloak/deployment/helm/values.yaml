@@ -45,6 +45,6 @@ injection:
       POSTGRES_USER: KC_DB_USERNAME
       POSTGRES_PASSWORD: KC_DB_PASSWORD
   controller:
-    enabled: true
+    enabled: false
     needs: nats
     replacements: {}
