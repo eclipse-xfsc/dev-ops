@@ -49,6 +49,9 @@ spec:
             - name: KC_PROXY_HEADERS
               value: "xforwarded"
 
+            - name: KC_DB
+              value: postgres
+
             # Bootstrap admin
             - name: KC_BOOTSTRAP_ADMIN_USERNAME
               value: {{ .Values.keycloak.bootstrapAdmin.username | quote }}
@@ -60,8 +63,6 @@ spec:
                   key: {{ .Values.keycloak.bootstrapAdmin.passwordSecretKey | quote }}
 
             {{- if .Values.injection.keycloak.enabled }}
-            - name: KC_DB
-              value: {{ .Release.Name | replace "-" "_" }}
 
             - name: KC_DB_USERNAME
               valueFrom:
