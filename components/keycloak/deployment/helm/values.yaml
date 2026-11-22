@@ -48,9 +48,3 @@ injection:
     enabled: true
     needs: nats
     replacements: {}
-# Operator ResourceClaim requires an existing ESO ExternalSecret, and is opt-in.
-resourceClaim:
-  enabled: false
-  provider: postgres
-  externalSecretName: ""
-  database: "keycloak"
