@@ -15,7 +15,7 @@ public final class XfscNatsEventListenerFactory implements EventListenerProvider
     private static final Logger LOG = Logger.getLogger(XfscNatsEventListenerFactory.class);
     private Connection connection;
     @Override public void init(Config.Scope config) {
-        String url = System.getenv().getOrDefault("XFSC_NATS_URL", "nats://localhost:4222");
+        String url = System.getenv().getOrDefault("NATS_URL", "nats://localhost:4222");
         try { connection = Nats.connect(url); }
         catch (Exception e) { LOG.error("Unable to connect to NATS; events will not be delivered", e); }
     }
