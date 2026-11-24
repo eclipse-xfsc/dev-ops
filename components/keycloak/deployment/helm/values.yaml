@@ -27,7 +27,7 @@ keycloak:
 controller:
   enabled: true
   image:
-    repository: xfsc-identity-controller
+    repository: node-654e3bca7fbeeed18f81d7c7.de-west-1.xaas.plus.cloud/dev-ops/keycloak-controller
     tag: latest
     pullPolicy: IfNotPresent
   adminUrl: ""
