@@ -114,6 +114,7 @@ func (c *controller) handle(ctx context.Context, subject string, raw []byte) (co
 		obj := map[string]any{}
 		if subject == messaging.TenantIdentityCreate {
 			obj["realm"] = r.TenantId
+			obj["loginTheme"] = "xfsc"
 		}
 		if r.Enabled != nil {
 			obj["enabled"] = *r.Enabled
