@@ -3,7 +3,7 @@ module github.com/eclipse-xfsc/tenant-identity-controller
 go 1.24.0
 
 require (
-	github.com/eclipse-xfsc/nats-message-library v1.5.3
+	github.com/eclipse-xfsc/nats-message-library v1.5.4
 	github.com/nats-io/nats.go v1.39.1
 )
 

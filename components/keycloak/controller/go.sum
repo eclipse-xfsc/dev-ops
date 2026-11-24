@@ -19,6 +19,8 @@ github.com/eclipse-xfsc/nats-message-library v1.5.2 h1:EknSSfJ/WKme9JY7rRlI6qL7w
 github.com/eclipse-xfsc/nats-message-library v1.5.2/go.mod h1:vOqJUxJnd3K2iP++cO3erFUIl7z6XGUn2gvHlaJ8wkM=
 github.com/eclipse-xfsc/nats-message-library v1.5.3 h1:8SaypOTqq6vkiUMnRs3c2PLLUX0oscfmvFO8bX9dc/U=
 github.com/eclipse-xfsc/nats-message-library v1.5.3/go.mod h1:vOqJUxJnd3K2iP++cO3erFUIl7z6XGUn2gvHlaJ8wkM=
+github.com/eclipse-xfsc/nats-message-library v1.5.4 h1:y03Zq3uB36bnSmeytHjJUcnLYP6gXmq6AhZJy2UXmnE=
+github.com/eclipse-xfsc/nats-message-library v1.5.4/go.mod h1:vOqJUxJnd3K2iP++cO3erFUIl7z6XGUn2gvHlaJ8wkM=
 github.com/eclipse-xfsc/oid4-vci-vp-library v1.8.1 h1:gME6SDK5iFFrPVxa86YrxLQJYcZHt1VD9yT7g8mcm+w=
 github.com/eclipse-xfsc/oid4-vci-vp-library v1.8.1/go.mod h1:z3IaBHrKd+ku3eDMDSMSpWLsLNJY/Qn1kZgZE88uC60=
 github.com/eclipse-xfsc/ssi-jwt/v2 v2.2.0 h1:JDsx/iPimPGWnBy1qvVDc2vvWmyS/yY0Fo4X+lbAYA4=
